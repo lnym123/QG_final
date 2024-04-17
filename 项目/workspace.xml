@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ce4e6a55-462e-4c1b-b7cb-d873ad55bb09" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Class" />
+        <option value="HTML File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2eR354G54QLnTqtctRftGdS2gkK" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Maven.jwt_test [tomcat7:run,-DforkCount=0...].executor": "Debug",
+    "Maven.jwt_test [tomcat7:run].executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/y/IdeaProjects/QG_final",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "onboarding.tips.debug.path": "C:/Users/y/IdeaProjects/untitled1/src/main/java/org/example/Main.java",
+    "project.structure.last.edited": "模块",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "ts.external.directory.path": "D:\\IntelliJ IDEA 2023.3.4\\plugins\\javascript-impl\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main\webapp\lib" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main\webapp" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main\java" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main\java\com" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main\webapp" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\web\lib" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\web" />
+      <recent name="C:\Users\y\IdeaProjects\untitled1\src\main\java\com" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ce4e6a55-462e-4c1b-b7cb-d873ad55bb09" name="Changes" comment="" />
+      <created>1711853376583</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1711853376583</updated>
+      <workItem from="1711853377574" duration="26000" />
+      <workItem from="1711893897647" duration="5000" />
+      <workItem from="1712733266838" duration="12000" />
+      <workItem from="1713059713658" duration="1080000" />
+      <workItem from="1713091495166" duration="219000" />
+      <workItem from="1713091772187" duration="3626000" />
+      <workItem from="1713101928076" duration="308000" />
+      <workItem from="1713102331245" duration="6432000" />
+      <workItem from="1713182500488" duration="195000" />
+      <workItem from="1713184770846" duration="11000" />
+      <workItem from="1713184877470" duration="1890000" />
+      <workItem from="1713189548736" duration="2816000" />
+      <workItem from="1713193010546" duration="801000" />
+      <workItem from="1713234092895" duration="2477000" />
+      <workItem from="1713236646515" duration="5466000" />
+      <workItem from="1713244929149" duration="7206000" />
+      <workItem from="1713252192418" duration="15281000" />
+      <workItem from="1713270700106" duration="11335000" />
+      <workItem from="1713327891413" duration="2703000" />
+      <workItem from="1713337217959" duration="3676000" />
+      <workItem from="1713350992958" duration="3739000" />
+      <workItem from="1713354850933" duration="418000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/main/java/com/DAO/UserDAO.java</url>
+          <line>8</line>
+          <properties class="com.DAO.UserDAO" method="insert">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

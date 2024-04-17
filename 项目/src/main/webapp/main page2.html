@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+    <script src="lib/vue.js"></script>
+    <script src="element-ui/lib/index.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="lib/jquery-3.7.1.min.js"></script>
+    <script src="lib/axios-0.18.0.js"></script>
+
+</head>
+
+<style>
+    .el-header, .el-footer {
+        background-color: #B3C0D1;
+        color: #333;
+        text-align: left;
+        line-height: 60px;
+
+    }
+
+    .el-aside {
+        background-color: #D3DCE6;
+        color: #333;
+        text-align:center;
+        line-height: 200px;
+    }
+    .el-main {
+        background-color: #E9EEF3;
+        color: #333;
+        text-align: center;
+        line-height: 10px;
+    }
+
+    body > .el-container {
+        margin-bottom: 40px;
+    }
+
+    .el-container:nth-child(5) .el-aside,
+    .el-container:nth-child(6) .el-aside {
+        line-height: 260px;
+    }
+
+    .el-container:nth-child(7) .el-aside {
+        line-height: 320px;
+    }
+
+</style>
+<body>
+<div id="app">
+
+
+    <el-container>
+        <el-aside width="200px">
+
+            <el-row class="tac">
+
+                <el-col :span="24">
+                    <el-menu
+                            default-active="0"
+                            class="el-menu-vertical-demo"
+                            @open="handleOpen"
+                            @close="handleClose">
+                        <el-menu-item  >
+
+<!--                            <i class="el-icon-menu"></i>-->
+                            <span slot="title">QG资金管理系统</span>
+                        </el-menu-item>
+                        <el-menu-item index="3" >
+                            <i class="el-icon-document"></i>
+                            <span @click="showyes" slot="title">个人中心</span>
+                        </el-menu-item>
+                        <el-menu-item index="4" >
+                            <i class="el-icon-document"></i>
+                            <span slot="title">资金中心</span>
+                        </el-menu-item>
+                        <el-menu-item index="5">
+                            <i class="el-icon-setting"></i>
+                            <span slot="title">导航四</span>
+                        </el-menu-item>
+                        <el-menu-item index="5">
+
+                            <!--                            <i class="el-icon-menu"></i>-->
+                            <span slot="title">导航5</span>
+                        </el-menu-item>
+                    </el-menu>
+                </el-col>
+            </el-row>
+        </el-aside>
+        <el-container >
+            <el-header >
+                <template >
+                    <div  class="demo-type" style="display: flex; justify-content: space-between;">
+                        <div style="margin-left: 1100px;margin-top: 10px" >
+                            <a   href="login.html" target="_self">
+                                <el-avatar :size="size" :src="circleUrl"></el-avatar>
+                            </a>
+                        </div>
+                        <div @click  id="userIdDisplay">{{ userId }}</div>
+                    </div>
+                </template>
+            </el-header>
+            <el-main><template >
+                <el-table
+                        :data="tableData"
+                        stripe
+                        style="width: 100%">
+                    <el-table-column
+                            prop="nickname"
+                            label="昵称"
+                            width="180">
+                    </el-table-column>
+<!--                    <el-table-column-->
+<!--                            prop="Avatar"-->
+<!--                            label="头像"-->
+<!--                            width="180">-->
+<!--                    </el-table-column>-->
+                    <el-table-column
+                            prop="number"
+                            label="手机号">
+                    </el-table-column>
+                    <el-table-column
+                            prop="password"
+                            label="密码">
+                    </el-table-column>
+                    <el-table-column
+                            prop="address"
+                            label="地址">
+                    </el-table-column>
+                    <el-table-column
+                            prop="group"
+                            label="所属群组">
+                    </el-table-column>
+
+                </el-table>
+            </template>
+                <el-button style="margin-left:1000px;margin-bottom:10px"  type="primary" @click="dialogVisible = true">修改数据</el-button>
+                <el-button style="margin-left:1000px;margin-bottom:10px"  type="primary" @click="dialogVisible1 = true">修改头像</el-button>
+
+<!--                  修改数据的对话框-->
+                <el-dialog
+                        title="修改数据"
+                        :visible.sync="dialogVisible"
+                        width="30%"
+                        :before-close="handleCloseForChange">
+                    <el-form ref="form" :model="User" label-width="80px">
+
+                        <el-form-item label="昵称">
+                            <el-input v-model="User.nickname"></el-input>
+                        </el-form-item>
+                        <el-form-item label="地址">
+                            <el-input v-model="User.location"></el-input>
+                        </el-form-item>
+                        <el-form-item label="密码">
+                            <el-input v-model="User.password"></el-input>
+                        </el-form-item>
+                        <el-form-item label="手机号">
+                            <el-input v-model="User.PhoneNumber"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="changedata">修改</el-button>
+                            <el-button @click="dialogVisible = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+
+                </el-dialog>
+                <!-- 修改头像的对话框 -->
+                <el-dialog
+                        title="修改头像"
+                        :visible.sync="dialogVisible1"
+                        width="30%"
+                        :before-close="handleClose1">
+                    <form id="avatarForm" enctype="multipart/form-data" ref="avatarForm">
+                        <input type="file" name="avatar" accept="image/*" required>
+                        <button  type="submit" @click="uploadAvatar">上传头像</button>
+                        <div id="resultMessage"></div>
+                    </form>
+                </el-dialog>
+            </el-main>
+        </el-container>
+    </el-container>
+
+
+</div>
+
+</body>
+<script>
+    var _this;
+</script>
+<script>
+    new Vue({
+        el: '#app',
+
+        mounted() {
+            // 当页面加载完成后
+            // 在Vue实例创建时尝试从localStorage获取token
+            this.token = localStorage.getItem('jwtToken');
+            if (this.token) {
+                try {
+                    // 分割JWT字符串为三部分: header.payload.signature
+                    const [header, payload, signature] = this.token.split('.');
+                    // Base64解码负载部分
+                    const decodedPayload = window.atob(payload);
+                    // 解析负载部分的JSON字符串
+                    const tokenData = JSON.parse(decodedPayload);
+                    // 从token数据中提取username并赋值给userId
+                    if (tokenData && tokenData.username) {
+                        console.log("用户名：", tokenData.username);
+                        this.userId = tokenData.username;
+                        _this = tokenData.username;
+                    }  if (tokenData && tokenData.avatar_url) {
+                        console.log("图片路径：", tokenData.avatar_url);
+                        this. circleUrl = tokenData.avatar_url;
+                        _this = tokenData.avatar_url;
+                    }
+                } catch (error) {
+                    console.error('解析token时出错:', error);
+                }
+            } else {
+                console.log('localStorage中没有找到token');
+            }
+
+        },
+
+        data () {
+            return {
+
+                User: {
+                    password: '',
+                    location: '',
+                    nickname: '',
+                    PhoneNumber:'',
+
+                },
+                circleUrl: '',
+                userId: '',
+                sizeList: ["large", "medium", "small"],
+                tableData: [{
+                    nickname:"zhangsan",
+                    number:"12345",
+                    address:"家",
+                    group: "三星",
+                    password:"mima"
+                }],
+                //修改对话框是否展示
+                dialogVisible: false,
+                dialogVisible1: false
+            }
+        },methods: {
+            handleOpen(key, keyPath) {
+                console.log(key, keyPath);
+            },
+            handleClose(key, keyPath) {
+                console.log(key, keyPath);
+            },
+            handleCloseForChange(key, keyPath) {
+                   this.dialogVisible=false;
+            },
+
+            handleClose1(done) {
+                this.dialogVisible1 = false;
+            },
+            showyes() {
+                $.ajax({
+                    url: 'showdata',
+                    method: 'POST',
+                    data: { username: this.userId },
+                    dataType: 'json',
+                    success: (response) => {
+                            // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                           this.tableData = [
+                                {
+                                    password:response.password,
+                                    nickname: response.nickname,
+                                    number: response.number,
+                                    address: response.address,
+                                    group: response.group
+                                }
+                            ];
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            changedata(){
+                var _this=this;
+                $.ajax({
+                    url: 'change',
+                    method: 'POST',
+                    data: {
+                        username: _this.userId,
+                        password: this.User.password,
+                        location: this.User.location,
+                        nickname: this.User.nickname,
+                        PhoneNumber: this.User.PhoneNumber,
+
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            _this.dialogVisible=false;
+                            _this.showyes();
+                        } else {
+                            alert('登录失败！');
+                        }
+                    },
+                });
+          }, handleRemove(file, fileList) {
+                console.log(file, fileList);
+            },
+            async uploadAvatar(event) {
+                event.preventDefault();
+
+                const formData = new FormData($('#avatarForm')[0]);
+                formData.append('username', this.userId); // 添加用户名字段
+
+                try {
+                    const response = await axios.post('upload', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+
+                    if (response.data.success) {
+                        $('#resultMessage').text('头像上传成功！');
+                    } else {
+                        $('#resultMessage').text('头像上传失败：' + response.data.message);
+                    }
+                } catch (error) {
+                    $('#resultMessage').text('上传过程中发生错误：' + error.message);
+                }
+            }
+        }
+        })
+
+
+</script>
+<script>
+    $(document).ready(function() {
+        $('#avatarForm').on('submit', function(event) {
+            event.preventDefault();
+
+            var formData = new FormData(this);
+            // formData.append('username', _this.userId); // 添加用户名字段
+
+            $.ajax({
+                url: 'upload', // 替换为实际的后端接口地址
+                type: 'POST',
+                data: formData,
+                contentType: false, // 必须，否则jQuery会自动设置Content-Type
+                processData: false, // 必须，防止jQuery对FormData进行预处理
+                success: function(response) {
+                    if (response.success) {
+                        $('#resultMessage').text('头像上传成功！');
+                        // 可以在此处更新页面上的头像显示
+                    } else {
+                        $('#resultMessage').text('头像上传失败：' + response.message);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $('#resultMessage').text('上传过程中发生错误：' + textStatus);
+                }
+            });
+        });
+    });
+</script>
+</html>

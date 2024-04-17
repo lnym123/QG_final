@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login & Register</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="lib/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="element-ui/lib/theme-chalk/index.css"></script>
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+</head>
+
+<body>
+<el-tag>QG资金管理系统</el-tag>
+<div id="app">
+    <el-tabs v-model="activeTab" type="card">
+        <el-tab-pane label="登录" name="login">
+
+            <el-form ref="loginForm" :model="loginForm" label-width="80px" @submit.prevent="handleLogin">
+                <el-form-item label="用户名">
+                    <el-input style="width: 200px;" v-model="loginForm.username" placeholder="请输入用户名"></el-input>
+                </el-form-item>
+                <el-form-item label="密码">
+                    <el-input  style="width: 200px;" type="password" v-model="loginForm.password" placeholder="请输入密码"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handleLogin">登录</el-button>
+                    <el-button type="primary" native-type="submit">游客登录</el-button>
+                </el-form-item>
+
+            </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="注册" name="register">
+            <el-form ref="registerForm" :model="registerForm" label-width="80px" @submit.prevent="handleRegister">
+                <el-form-item label="用户名">
+                    <el-input style="width: 200px;" v-model="registerForm.username" placeholder="请输入用户名"></el-input>
+                </el-form-item>
+                <el-form-item label="密码">
+                    <el-input style="width: 200px;" type="password"  v-model="registerForm.password" placeholder="请输入密码"></el-input>
+                </el-form-item>
+                <el-form-item label="昵称">
+                    <el-input style="width: 200px;" type="nickname" v-model="registerForm.nickname" placeholder="请输入昵称"></el-input>
+                </el-form-item>
+                <el-form-item label="地址">
+                    <el-input style="width: 200px;" type="location" v-model="registerForm.location" placeholder="请输入地址"></el-input>
+                </el-form-item>
+                <el-form-item label="手机号码">
+                    <el-input style="width: 200px;" type="password" v-model="registerForm.PhoneNumber" placeholder="请输入手机号码"></el-input>
+                </el-form-item>
+                <el-form-item label="确认密码">
+                    <el-input   style="width: 200px;" type="password" v-model="registerForm.confirmPassword" placeholder="请再次输入密码"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button  @click="handleRegister">注册</el-button>
+                </el-form-item>
+            </el-form>
+        </el-tab-pane>
+    </el-tabs>
+</div>
+
+<script>
+    new Vue({
+        el: "#app",
+        data() {
+            return {
+                activeTab: "login",
+                loginForm: {
+                    username: "",
+                    password: ""
+                },
+                registerForm: {
+                    username: "",
+                    password: "",
+                    nickname:"",
+                    location:"",
+                    PhoneNumber:"",
+                    confirmPassword: ""
+                }
+            };
+        },
+        methods: {
+            handleLogin(event) {
+                console.log("登录表单提交:", this.loginForm);
+                $.ajax({
+                    url: 'login',
+                    method: 'POST',
+                    data: this.loginForm,
+                    dataType: 'json',
+                    success: (response) => {
+                        var jwtToken = response.token;
+                        localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
+                        // 登录成功后的操作，如跳转页面等
+                        window.location.href = "main page2.html";
+                    },
+                    error: (xhr, status, error) => {
+                        alert("登录失败");
+                    }
+                })
+            },
+            handleRegister() {
+                console.log("注册表单提交:", this.registerForm);
+                $.ajax({
+                    url: 'register',
+                    method: 'POST',
+                    data: this.registerForm,
+                    datatype:'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('Login failed:', error);
+                        // 处理登录失败逻辑
+                    }
+                })
+            }
+        }
+    });
+</script>
+
+</script>
+</body>
+</html>
