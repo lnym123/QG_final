@@ -11,4 +11,6 @@ public interface MessageDAO {
     List<Message> UserMessages(String groupId ,String name);
 
     int DeleteMessage(String senter,String message);
+
+    int ForAgreement(String senter,String message);
 }

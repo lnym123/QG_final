@@ -123,7 +123,7 @@
                                         <el-table-column  width="200" label="操作">
                                             <template slot-scope="{ row, $index }">
                                                 <div style="display: flex;">
-                                                    <el-button type="success" icon="el-icon-check" v-if="row.message !== '退出群组'"  @click="handleConfirmButtonClick">
+                                                    <el-button type="success" icon="el-icon-check" v-if="row.message !== '退出群组'"  @click="handleConfirmButtonClick($index)">
                                                     </el-button>
                                                     <el-button type="danger"  icon="el-icon-delete" @click="handleDeleteButtonClick($index)">
                                                         删除
@@ -134,12 +134,7 @@
                                     </el-table>
                                 </div>
                             </template>
-<!--                            <el-table-column label="操作" width="120">-->
-<!--                                <template slot-scope="scope">-->
-<!--                                    &lt;!&ndash; 只有当消息不是“退出群组”时才显示删除按钮 &ndash;&gt;-->
-<!--                                    <el-button type="danger" icon="el-icon-delete" v-if="scope.row.message !== '退出群组'" @click="handleDelete(scope.row)"></el-button>-->
-<!--                                </template>-->
-<!--                            </el-table-column>-->
+
                             <el-button @click="GetMessageForAdmin" slot="reference">我的消息</el-button>
                         </el-popover>
                         <div style="margin-left:100px;margin-top: 10px" >
@@ -476,20 +471,7 @@
                     console.warn('Row with id', row.id, 'not found in gridData.'); // 如果找不到索引，输出警告
                 }
             },
-            handleConfirm(row) {
 
-                // 找到要删除的行的索引
-                const index = this.gridData.findIndex(item => item.id === row.id);
-
-                if (index !== -1) {
-                    // 显示这一行的senter数据
-                    alert(index)
-                    const senterValue = row.message; // 假设row对象中有senter属性
-                    alert(senterValue); // 使用alert显示senter的值
-
-
-                }
-            },
             changedata(){
                 var _this=this;
                 $.ajax({
@@ -566,18 +548,16 @@
             },
             //消息确认
             handleConfirmButtonClick(rowIndex) {
-                alert("当前index"+rowIndex);
-                // 从 gridData 中移除指定索引的数据项
+                var _this=this;
                 const currentRow = this.gridData[rowIndex];
-                // // 获取当前行的 senter 和 message 数据
                 const senter = currentRow.senter;
                 this.gridData.splice(rowIndex, 1);
                 $.ajax({
-                    url: 'http://localhost:8080/jwt_test/message/agreement',
+                    url: 'http://localhost:8080/jwt_test/message/Agreement',
                     method: 'POST',
                     data: {
                         TheSenter:senter,
-                        TheMessage:message
+                        id:_this.userId
                     },
                     dataType: 'text',
                     success:  (response) => {

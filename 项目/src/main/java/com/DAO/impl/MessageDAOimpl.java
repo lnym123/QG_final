@@ -3,12 +3,6 @@ package com.DAO.impl;
 import com.DAO.BaseDAO;
 import com.DAO.MessageDAO;
 import com.pojo.Message;
-import com.util.JDBCUtilV2;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.List;
 
 public  class MessageDAOimpl extends BaseDAO implements MessageDAO {
@@ -38,7 +32,17 @@ public  class MessageDAOimpl extends BaseDAO implements MessageDAO {
     public int DeleteMessage(String senter, String message) {
 
         try {
-            String sql = "delete from tb_message where senter= ? AND message= ?";
+            String sql ="DELETE FROM tb_message WHERE senter = ?AND message=?";
+            return executeUpdate(sql,senter,message);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int ForAgreement(String senter, String message) {
+        try {
+            String sql ="DELETE FROM tb_message WHERE senter = ?AND message <> ?";
             return executeUpdate(sql,senter,message);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -51,7 +51,16 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
          resp.setCharacterEncoding("UTF-8");
          resp.getWriter().write("删除完毕");
 
-
+     }
+     public  void Agreement(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+         String senter = req.getParameter("TheSenter");
+         String id = req.getParameter("id");
+         User user=userDao.selectByname(id);
+         String groupname=user.getGroupid();
+         int b=userDao.ForAgreement(senter,groupname);
+         int i= messageDAO.ForAgreement(senter,"退出群组");
+         resp.setCharacterEncoding("UTF-8");
+         resp.getWriter().write("添加完毕");
 
      }
 

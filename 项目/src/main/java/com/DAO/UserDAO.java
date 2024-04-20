@@ -18,4 +18,6 @@ public interface UserDAO {
     int sendapplication(Message message);
 
     int ExitGroup(String username);
+
+    int ForAgreement(String username,String groupid);
 }

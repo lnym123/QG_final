@@ -68,5 +68,15 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public int ForAgreement(String username, String groupid) {
+        try {
+            String sql = "UPDATE tb_user SET groupid = ? WHERE username = ?";
+            return executeUpdate(sql,groupid,username);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
 
