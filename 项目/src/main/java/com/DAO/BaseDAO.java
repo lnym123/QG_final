@@ -63,7 +63,6 @@ public class BaseDAO {
 
         //预编译SQL语句
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
-
         //设置占位符的值
         if(params!=null && params.length > 0){
             for (int i = 0; i < params.length; i++) {
@@ -77,7 +76,6 @@ public class BaseDAO {
         //包含了：列的数量、每个列的名称
         ResultSetMetaData metaData = resultSet.getMetaData();
         int columnCount = metaData.getColumnCount();
-
         List<T> list = new ArrayList<>();
         //处理结果
         while(resultSet.next()){

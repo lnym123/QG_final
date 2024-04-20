@@ -1,4 +1,4 @@
-package com.Controller.old;
+package com.Controller.old.users;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
@@ -28,7 +28,7 @@ import java.util.List;
 @WebServlet("/upload")
 @MultipartConfig // 启用文件上传功能
 public class FileUploadServlet extends HttpServlet {
-    private static final String UPLOAD_DIR = "C://Users//y//Desktop//untitled2"; // 替换为实际的上传目录路径
+    private static final String UPLOAD_DIR = "src/main/webapp/images"; // 替换为实际的上传目录路径
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
 
 

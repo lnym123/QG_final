@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<meta charset="UTF-8">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
@@ -10,6 +11,7 @@
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <script src="lib/jquery-3.7.1.min.js"></script>
     <script src="lib/axios-0.18.0.js"></script>
+    <script src="lib/vue-router.global.js"></script>
 
 </head>
 
@@ -65,26 +67,19 @@
                             @open="handleOpen"
                             @close="handleClose">
                         <el-menu-item  >
-
-<!--                            <i class="el-icon-menu"></i>-->
                             <span slot="title">QG资金管理系统</span>
                         </el-menu-item>
                         <el-menu-item index="3" >
-                            <i class="el-icon-document"></i>
-                            <span @click="showyes" slot="title">个人中心</span>
+                            <i class="el-icon-user"></i>
+                            <span @click="showPersonimf" slot="title">个人中心</span>
+                        </el-menu-item>
+                        <el-menu-item index="5">
+                            <i class="el-icon-s-cooperation"></i>
+                            <span @click="() => { ShowPersonalGroup(); open1(); }" slot="title">我的群组</span>
                         </el-menu-item>
                         <el-menu-item index="4" >
-                            <i class="el-icon-document"></i>
+                            <i class="el-icon-s-data"></i>
                             <span slot="title">资金中心</span>
-                        </el-menu-item>
-                        <el-menu-item index="5">
-                            <i class="el-icon-setting"></i>
-                            <span slot="title">导航四</span>
-                        </el-menu-item>
-                        <el-menu-item index="5">
-
-                            <!--                            <i class="el-icon-menu"></i>-->
-                            <span slot="title">导航5</span>
                         </el-menu-item>
                     </el-menu>
                 </el-col>
@@ -92,32 +87,127 @@
         </el-aside>
         <el-container >
             <el-header >
+
                 <template >
+
                     <div  class="demo-type" style="display: flex; justify-content: space-between;">
-                        <div style="margin-left: 1100px;margin-top: 10px" >
+                        <div style="margin-right: 10px;" v-if="currentTable === 'table1'"  >公开的企业群组</div>
+                        <el-form :inline="true" v-if="currentTable === 'table1'" :model="formInline" class="demo-form-inline">
+                            <el-form-item label="企业名称">
+                                <el-input v-model="formInline.name" placeholder="企业名称"></el-input>
+                            </el-form-item>
+                            <el-form-item label="企业方向">
+                                <el-input v-model="formInline.direction" placeholder="企业方向"></el-input>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" @click="onSubmit">查询</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" style="margin-right: 50px" @click="dialogVisible2 = true" v-if="currentTable === 'table1'" >加入群组</el-button>
+                            </el-form-item>
+
+                        </el-form>
+
+                        <el-button  size="mini" v-else-if="currentTable === 'table2'||currentTable === 'table3'"  type="primary" @click="goBack">返回</el-button>
+                        <el-popover
+                                placement="right"
+                                width="400"
+                                trigger="click">
+                            <template>
+                                <div>
+                                    <el-table :data="gridData" style="width: 100%">
+                                        <el-table-column  prop="senter" label="发送者"></el-table-column>
+                                        <el-table-column  prop="message" label="消息内容"></el-table-column>
+
+                                        <!-- 添加一个自定义列，包含按钮及行数显示 -->
+                                        <el-table-column  width="200" label="操作">
+                                            <template slot-scope="{ row, $index }">
+                                                <div style="display: flex;">
+                                                    <el-button type="success" icon="el-icon-check" v-if="row.message !== '退出群组'"  @click="handleConfirmButtonClick">
+                                                    </el-button>
+                                                    <el-button type="danger"  icon="el-icon-delete" @click="handleDeleteButtonClick($index)">
+                                                        删除
+                                                    </el-button>
+                                                </div>
+                                            </template>
+                                        </el-table-column>
+                                    </el-table>
+                                </div>
+                            </template>
+<!--                            <el-table-column label="操作" width="120">-->
+<!--                                <template slot-scope="scope">-->
+<!--                                    &lt;!&ndash; 只有当消息不是“退出群组”时才显示删除按钮 &ndash;&gt;-->
+<!--                                    <el-button type="danger" icon="el-icon-delete" v-if="scope.row.message !== '退出群组'" @click="handleDelete(scope.row)"></el-button>-->
+<!--                                </template>-->
+<!--                            </el-table-column>-->
+                            <el-button @click="GetMessageForAdmin" slot="reference">我的消息</el-button>
+                        </el-popover>
+                        <div style="margin-left:100px;margin-top: 10px" >
+
                             <a   href="login.html" target="_self">
                                 <el-avatar :size="size" :src="circleUrl"></el-avatar>
                             </a>
                         </div>
                         <div @click  id="userIdDisplay">{{ userId }}</div>
+
                     </div>
                 </template>
+
+                <el-dialog
+                        title="加入群组"
+                        :visible.sync="dialogVisible2"
+                        width="30%"
+                        :before-close="handleClose2">
+
+                    <el-form :model="JoinGroup" label-position="left">
+                        <el-form-item label="输入要加入的企业名称">
+                            <el-input v-model="JoinGroup.companyName"></el-input>
+                        </el-form-item>
+                    </el-form>
+
+                    <span slot="footer">
+    <el-button @click="dialogVisible2 = false">取消</el-button>
+    <el-button type="primary" @click="handleJoinGroup">确定</el-button>
+  </span>
+                </el-dialog>
+
             </el-header>
-            <el-main><template >
-                <el-table
-                        :data="tableData"
-                        stripe
-                        style="width: 100%">
+            <el-main>
+                <template >
+                    <div class="container">
+
+<!--企业信息展示表格-->
+                        <el-table v-if="currentTable === 'table1'"
+                                  :data="tableData1"
+                                  style="width: 100%">
+                            <el-table-column
+                                    prop="groupname"
+                                    label="企业名称"
+                                    width="180">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="number"
+                                    label="企业人数">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="scale"
+                                    label="规模">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="direction"
+                                    label="企业方向">
+                            </el-table-column>
+                        </el-table>
+<!--                        个人信息展示表格-->
+                        <el-table v-else-if="currentTable === 'table2'"
+                                  :data="tableData"
+                                  stripe
+                                  style="width: 100%">
                     <el-table-column
                             prop="nickname"
                             label="昵称"
                             width="180">
                     </el-table-column>
-<!--                    <el-table-column-->
-<!--                            prop="Avatar"-->
-<!--                            label="头像"-->
-<!--                            width="180">-->
-<!--                    </el-table-column>-->
                     <el-table-column
                             prop="number"
                             label="手机号">
@@ -134,11 +224,50 @@
                             prop="group"
                             label="所属群组">
                     </el-table-column>
+                        </el-table>
+<!--                        我的群组页面群组介绍-->
+                        <el-table v-if="currentTable === 'table3'"
+                                  :data="tableData2"
+                                  style="width: 100%">
+                            <el-table-column
+                                    prop="groupname1"
+                                    label="企业名称"
+                                    width="180">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="number1"
+                                    label="企业人数">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="scale1"
+                                    label="规模">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="direction1"
+                                    label="企业方向">
+                            </el-table-column>
+                        </el-table>
+                        <el-switch v-if="currentTable === 'table3'&& this.Authority>1" style="margin-right:1050px "
+                                v-model="value1"
+                                inactive-text="群组是否隐藏"
+                            >
+                        </el-switch>
+                        <div style="display: flex; justify-content: space-between; margin-right: 500px; margin-bottom: 10px;">
+                            <el-button v-if="currentTable === 'table3'&&this.Authority>1" type="warning">注销群组</el-button>
+                            <el-button v-if="currentTable === 'table3'&&this.Authority>1" type="primary" @click="forExitgroup">邀请他人进入群组</el-button>
+                            <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="forExitgroup">申请个人群组</el-button>
+                            <el-button v-if="currentTable === 'table3'" type="primary" @click="forExitgroup">退出群组</el-button>
+                        </div>
 
-                </el-table>
+                    </div>
             </template>
-                <el-button style="margin-left:1000px;margin-bottom:10px"  type="primary" @click="dialogVisible = true">修改数据</el-button>
-                <el-button style="margin-left:1000px;margin-bottom:10px"  type="primary" @click="dialogVisible1 = true">修改头像</el-button>
+
+                <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible = true">修改数据</el-button>
+                <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible1 = true">修改头像</el-button>
+                <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="forLogout" >退出登录</el-button>
+
+
+
 
 <!--                  修改数据的对话框-->
                 <el-dialog
@@ -179,6 +308,9 @@
                         <div id="resultMessage"></div>
                     </form>
                 </el-dialog>
+
+
+
             </el-main>
         </el-container>
     </el-container>
@@ -187,47 +319,27 @@
 </div>
 
 </body>
-<script>
-    var _this;
-</script>
+
 <script>
     new Vue({
         el: '#app',
 
         mounted() {
-            // 当页面加载完成后
-            // 在Vue实例创建时尝试从localStorage获取token
-            this.token = localStorage.getItem('jwtToken');
-            if (this.token) {
-                try {
-                    // 分割JWT字符串为三部分: header.payload.signature
-                    const [header, payload, signature] = this.token.split('.');
-                    // Base64解码负载部分
-                    const decodedPayload = window.atob(payload);
-                    // 解析负载部分的JSON字符串
-                    const tokenData = JSON.parse(decodedPayload);
-                    // 从token数据中提取username并赋值给userId
-                    if (tokenData && tokenData.username) {
-                        console.log("用户名：", tokenData.username);
-                        this.userId = tokenData.username;
-                        _this = tokenData.username;
-                    }  if (tokenData && tokenData.avatar_url) {
-                        console.log("图片路径：", tokenData.avatar_url);
-                        this. circleUrl = tokenData.avatar_url;
-                        _this = tokenData.avatar_url;
-                    }
-                } catch (error) {
-                    console.error('解析token时出错:', error);
-                }
-            } else {
-                console.log('localStorage中没有找到token');
-            }
-
+            this.showgroups();
+           this.checkToken();
         },
 
-        data () {
-            return {
 
+            data () {
+            return {
+                value1: false,
+                currentTable: 'table1',
+                // 搜索框表单
+                formInline: {
+                    name: '',
+                    direction: ''
+                },
+                //修改数据的群组信息
                 User: {
                     password: '',
                     location: '',
@@ -235,26 +347,60 @@
                     PhoneNumber:'',
 
                 },
-                circleUrl: '',
-                userId: '',
-                sizeList: ["large", "medium", "small"],
+                // 个人信息展示表格数据
                 tableData: [{
-                    nickname:"zhangsan",
-                    number:"12345",
-                    address:"家",
-                    group: "三星",
-                    password:"mima"
+                    nickname:"",
+                    number:"",
+                    address:"",
+                    group: "",
+                    password:""
                 }],
-                //修改对话框是否展示
+                // 所有群组信息展示表格数据
+                tableData1: [{
+                    groupname:"",
+                    number:"",
+                    scale:"",
+                    direction:"",
+
+                }, ],
+                // 个人所在群组信息展示
+                tableData2: [{
+                    groupname1:"",
+                    number1:"",
+                    scale1:"",
+                    direction1:"",
+
+                }, ],
+                // 消息
+                gridData: [{
+                    senter: '',
+                    message: '',
+                },],
+                JoinGroup: {
+                    companyName: ''
+                },
+                circleUrl: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+                userId: '游客',
+                sizeList: ["large", "medium", "small"],
+                Authority:"",
+
+                //修改用户信息对话框是否展示
                 dialogVisible: false,
-                dialogVisible1: false
+                //修改头像对话框是否展示
+                dialogVisible1: false,
+                //加入群组的对话框
+                dialogVisible2 :false
             }
         },methods: {
             handleOpen(key, keyPath) {
                 console.log(key, keyPath);
-            },
-            handleClose(key, keyPath) {
-                console.log(key, keyPath);
+            },  open1() {
+                const h = this.$createElement;
+
+                this.$notify({
+                    title: '标题名称',
+                    message: h('i', { style: 'color: teal'}, '这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案')
+                });
             },
             handleCloseForChange(key, keyPath) {
                    this.dialogVisible=false;
@@ -263,9 +409,16 @@
             handleClose1(done) {
                 this.dialogVisible1 = false;
             },
-            showyes() {
+            handleClose2(done) {
+                this.dialogVisible2 = false;
+            },
+            showPersonimf() {
+                if(this.userId==="null"){
+                    alert("请先点击头像登录");
+                    return;
+                }
                 $.ajax({
-                    url: 'showdata',
+                    url: 'http://localhost:8080/jwt_test/user/ShowImformation',
                     method: 'POST',
                     data: { username: this.userId },
                     dataType: 'json',
@@ -286,11 +439,61 @@
                         // 处理请求失败逻辑
                     }
                 });
+                this.currentTable="table2";
+            },showgroups() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ShowGroups',
+                    method: 'POST',
+                    dataType: 'json',
+                    success:  (response) => {
+
+                        const tableData1 = response.map(group => ({
+                            groupname: group.groupname,
+                            number: group.number,
+                            scale: group.scale,
+                            direction: group.direction,
+                        }));
+                        this.tableData1 = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            handleDelete(row) {
+                console.log('Received row:', row); // 输出接收到的行数据
+                const index = this.gridData.findIndex(item => item.id === row.id);
+                if (index !== -1) {
+                    console.log('Found index:', index); // 输出找到的索引
+                    console.log('Grid data at index:', this.gridData[index]); // 输出对应索引处的 gridData 项
+                    // 显示这一行的senter数据（如果需要的话）
+                    const senterValue = row.senter;
+                    alert(senterValue); // 使用alert显示senter的值
+                    // 删除这一行
+                    this.gridData.splice(index, 1);
+                } else {
+                    console.warn('Row with id', row.id, 'not found in gridData.'); // 如果找不到索引，输出警告
+                }
+            },
+            handleConfirm(row) {
+
+                // 找到要删除的行的索引
+                const index = this.gridData.findIndex(item => item.id === row.id);
+
+                if (index !== -1) {
+                    // 显示这一行的senter数据
+                    alert(index)
+                    const senterValue = row.message; // 假设row对象中有senter属性
+                    alert(senterValue); // 使用alert显示senter的值
+
+
+                }
             },
             changedata(){
                 var _this=this;
                 $.ajax({
-                    url: 'change',
+                    url: 'http://localhost:8080/jwt_test/user/ForChangeData',
                     method: 'POST',
                     data: {
                         username: _this.userId,
@@ -304,7 +507,7 @@
                     success: function (response) {
                         if (response.success) {
                             _this.dialogVisible=false;
-                            _this.showyes();
+                            _this.showPersonimf();
                         } else {
                             alert('登录失败！');
                         }
@@ -320,7 +523,7 @@
                 formData.append('username', this.userId); // 添加用户名字段
 
                 try {
-                    const response = await axios.post('upload', formData, {
+                    const response = await axios.post('http://localhost:8080/jwt_test/user/FileUpload', formData, {
                         headers: {
                             'Content-Type': 'multipart/form-data'
                         }
@@ -328,45 +531,263 @@
 
                     if (response.data.success) {
                         $('#resultMessage').text('头像上传成功！');
+                        this.checkToken();
                     } else {
                         $('#resultMessage').text('头像上传失败：' + response.data.message);
                     }
                 } catch (error) {
                     $('#resultMessage').text('上传过程中发生错误：' + error.message);
                 }
+            },
+            goBack() {
+             this.currentTable="table1";
+            },
+            //消息删除
+            handleDeleteButtonClick(rowIndex) {
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                // // 获取当前行的 senter 和 message 数据
+                const senter = currentRow.senter;
+                const message = currentRow.message;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/DeleteMessage',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        TheMessage:message
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                    },
+                    error:{},
+                  })
+            },
+            //消息确认
+            handleConfirmButtonClick(rowIndex) {
+                alert("当前index"+rowIndex);
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                // // 获取当前行的 senter 和 message 数据
+                const senter = currentRow.senter;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/agreement',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        TheMessage:message
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                    },
+                    error:{},
+                })
+            },
+            //群组搜索
+            onSubmit() {
+                if ((this.formInline.name === null || this.formInline.name === undefined || this.formInline.name === "") &&
+                    (this.formInline.direction === null || this.formInline.direction === undefined || this.formInline.direction === "")){
+
+                    this.showgroups();
+                    return;
+                }
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/GroupQueryService',
+                    method: 'POST',
+                    data: {
+                        groupName:this.formInline.name,
+                        direction:this.formInline.direction
+                    },
+                    dataType: 'json',
+                    success:  (response) => {
+                        const tableData1 = response.map(group => ({
+                            groupname: group.groupname,
+                            number: group.number,
+                            scale: group.scale,
+                            direction: group.direction,
+                        }));
+                        this.tableData1 = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+
+                })
+
+
+            },
+            //处理用户申请加入群组
+            handleJoinGroup() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/Sendapplication',
+                    method: 'POST',
+                    data: {
+                        senter:this.userId,
+                        groupid:this.JoinGroup.companyName,
+                        sendmessage: "申请加入 " + this.JoinGroup.companyName
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                         alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+
+
+                })
+                this.dialogVisible2 = false;
+            },
+            //退出登录
+            forLogout(){
+                const TOKEN_KEY = 'jwtToken';
+                localStorage.removeItem(TOKEN_KEY);
+                window.location.href ="login.html";
+            },
+            //展示个人群组数据
+            ShowPersonalGroup(){
+                this.currentTable="table3";
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ShowPersonalGroup',
+                    method: 'POST',
+                    data:{username:this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        if(response===null){
+
+                            this.tableData2  = [
+                                {
+                                    groupname1:" ",
+                                    number1:" ",
+                                    scale1:" ",
+                                    direction1:" ",
+                                },
+                            ];
+                            return;
+                        }
+                        this.tableData2  = [
+                            {
+                                groupname1:response.groupname,
+                                number1:response.number,
+                                scale1:response.scale,
+                                direction1:response.direction,
+                            },
+                        ];
+
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+
+            },//退出群组
+            forExitgroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ExitfromGroup',
+                    method: 'POST',
+                    data: {  username:this.userId
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            alert("退出成功");
+                            _this.ShowPersonalGroup();
+                        } else {
+                            alert('登录失败！');
+                        }
+                    },
+                })
+
+            },GetMessageForAdmin(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForAdminMessage',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                        const Tdata = response.map(group => ({
+                            senter:group.senter,
+                            message:group.message,
+                        }));
+                        this.gridData = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },GetMessageForUser(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForAdminMessage',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                        const Tdata = response.map(group => ({
+                            senter:group.senter,
+                            message:group.message,
+                        }));
+                        this.gridData = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+
+
+            checkToken(){// 当页面加载完成后
+                // 在Vue实例创建时尝试从localStorage获取token
+                this.token = localStorage.getItem('jwtToken');
+                if (this.token) {
+                    try {
+                        // 分割JWT字符串为三部分: header.payload.signature
+                        const [header, payload, signature] = this.token.split('.');
+                        // Base64解码负载部分
+                        const decodedPayload = window.atob(payload);
+                        // 解析负载部分的JSON字符串
+                        const tokenData = JSON.parse(decodedPayload);
+                        // 从token数据中提取username并赋值给userId
+                        if (tokenData && tokenData.username) {
+                            console.log("用户名：", tokenData.username);
+                            this.userId = tokenData.username;
+                            this.Authority=tokenData.authority;
+                            console.log("权限：", tokenData.authority);
+                        }  if (tokenData && tokenData.avatar_url) {
+                            console.log("图片路径：", tokenData.avatar_url);
+                            const urlPrefix = 'images/'; // 假设图片位于Web应用的/images目录下
+                            // 从本地路径中提取图片文件名（包括扩展名）
+                            const fileName = tokenData.avatar_url.split('\\').pop(); // 在Windows中路径分隔符是反斜杠\
+                            // 拼接URL前缀和文件名得到完整的图片URL
+                            const imageUrl = urlPrefix + fileName;
+
+                            // 将得到的URL赋值给this.circleUrl
+                            this.circleUrl = imageUrl;
+                        }
+                    } catch (error) {
+                        console.error('解析token时出错:', error);
+                    }
+                } else {
+                    console.log('localStorage中没有找到token');
+                }
+
             }
         }
         })
 
 
 </script>
-<script>
-    $(document).ready(function() {
-        $('#avatarForm').on('submit', function(event) {
-            event.preventDefault();
 
-            var formData = new FormData(this);
-            // formData.append('username', _this.userId); // 添加用户名字段
-
-            $.ajax({
-                url: 'upload', // 替换为实际的后端接口地址
-                type: 'POST',
-                data: formData,
-                contentType: false, // 必须，否则jQuery会自动设置Content-Type
-                processData: false, // 必须，防止jQuery对FormData进行预处理
-                success: function(response) {
-                    if (response.success) {
-                        $('#resultMessage').text('头像上传成功！');
-                        // 可以在此处更新页面上的头像显示
-                    } else {
-                        $('#resultMessage').text('头像上传失败：' + response.message);
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    $('#resultMessage').text('上传过程中发生错误：' + textStatus);
-                }
-            });
-        });
-    });
-</script>
 </html>

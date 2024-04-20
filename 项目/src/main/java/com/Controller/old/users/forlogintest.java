@@ -1,4 +1,4 @@
-package com.Controller.old;
+package com.Controller.old.users;
 
 import com.DAO.UserDAO;
 import com.DAO.impl.UserDAOImpl;
@@ -35,8 +35,9 @@ public class forlogintest  extends HttpServlet {
             // 验证通过，生成JWT
                 String token = Jwts.builder()
                         .setSubject(username) // 设置JWT的主题，可以存放用户名
-                        .claim("avatar_url",matchedUser.getAvatar_url() )
-                        .claim("username",username)// 尽管不建议直接存储明文密码，但这里仅作示例
+                        .claim("avatar_url",matchedUser.getAvatar_url())
+                        .claim("username",username)
+                        .claim("password",password)// 尽管不建议直接存储明文密码，但这里仅作示例
                         .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
                         .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
                         .compact();

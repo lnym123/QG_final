@@ -1,4 +1,4 @@
-package com.Controller.old;
+package com.Controller.old.users;
 
 import com.DAO.UserDAO;
 import com.DAO.impl.UserDAOImpl;
@@ -25,6 +25,8 @@ public class forregistertest extends HttpServlet {
         User user=new User(username,password,location,nickname,PhoneNumber);
         int i=userDao.insert(user);
         if(i==1) {
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write("登录成功");
         }
     }

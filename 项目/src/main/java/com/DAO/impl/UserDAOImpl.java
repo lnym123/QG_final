@@ -2,6 +2,7 @@ package com.DAO.impl;
 
 import com.DAO.BaseDAO;
 import com.DAO.UserDAO;
+import com.pojo.Message;
 import com.pojo.User;
 
 import java.util.List;
@@ -9,11 +10,10 @@ import java.util.List;
 public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int insert(User user) {
-        System.out.println(user.getUsername()+user.getPassword()+user.getNickname()+user.getLocation()+user.getPhoneNumber());
         try {
-            String sql = "INSERT INTO tb_user(username,password,location,nickname,PhoneNumber) VALUES (?,?,?,?,?)";
+            String sql = "INSERT INTO tb_user(username,password,location,nickname,PhoneNumber,authority) VALUES (?,?,?,?,?,?)";
             return executeUpdate(sql, user.getUsername(), user.getPassword(), user.getLocation(), user.getNickname()
-                    , user.getPhoneNumber());
+                    , user.getPhoneNumber(),1);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -49,6 +49,24 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         }
     }
 
+    @Override
+    public int sendapplication(Message message) {
+        try {
+            String sql = "INSERT INTO tb_message(senter,message,groupid) VALUES (?,?,?)";
+            return executeUpdate(sql, message.getSenter(),message.getMessage(),message.getGroupid());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    @Override
+    public int ExitGroup(String username) {
+        try {
+            String sql = "UPDATE tb_user SET groupid = NULL WHERE username = ?";
+            return executeUpdate(sql,username);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
 

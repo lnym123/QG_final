@@ -1,5 +1,6 @@
 package com.DAO;
 
+import com.pojo.Message;
 import com.pojo.User;
 
 import java.util.List;
@@ -13,4 +14,8 @@ public interface UserDAO {
     User selectByname(String username);
 
     int updateData(User user);
+
+    int sendapplication(Message message);
+
+    int ExitGroup(String username);
 }

@@ -29,14 +29,8 @@ public class User {
 
     private String PhoneNumber;
 
-    public String getAvatar_url() {
-        return avatar_url;
-    }
 
-    public void setAvatar_url(String avatar_url) {
-        this.avatar_url = avatar_url;
-    }
-
+    private int authority;
     private String groupid;
 
     private String avatar_url;
@@ -56,7 +50,21 @@ public class User {
                 ", groupid='" + groupid + '\'' +
                 '}';
     }
+    public String getAvatar_url() {
+        return avatar_url;
+    }
 
+    public int getAuthority() {
+        return authority;
+    }
+
+    public void setAuthority(int authority) {
+        this.authority = authority;
+    }
+
+    public void setAvatar_url(String avatar_url) {
+        this.avatar_url = avatar_url;
+    }
     public String getGroupid() {
         return groupid;
     }
