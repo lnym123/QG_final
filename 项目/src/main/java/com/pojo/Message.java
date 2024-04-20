@@ -5,6 +5,41 @@ public class Message {
      private String message;
      private String groupid;
      private String recipient;
+     private  String type;
+
+    public String getType() {
+        return type;
+    }
+
+    public Message(String senter, String message, String groupid, String recipient, String type) {
+        this.senter = senter;
+        this.message = message;
+        this.groupid = groupid;
+        this.recipient = recipient;
+        this.type = type;
+    }
+
+    public Message(String senter, String message, String groupid, String type) {
+        this.senter = senter;
+        this.message = message;
+        this.groupid = groupid;
+        this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "senter='" + senter + '\'' +
+                ", message='" + message + '\'' +
+                ", groupid='" + groupid + '\'' +
+                ", recipient='" + recipient + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 
     public String getSenter() {
         return senter;

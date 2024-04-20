@@ -52,8 +52,8 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int sendapplication(Message message) {
         try {
-            String sql = "INSERT INTO tb_message(senter,message,groupid) VALUES (?,?,?)";
-            return executeUpdate(sql, message.getSenter(),message.getMessage(),message.getGroupid());
+            String sql = "INSERT INTO tb_message(senter,message,groupid,type) VALUES (?,?,?,?)";
+            return executeUpdate(sql, message.getSenter(),message.getMessage(),message.getGroupid(),message.getType());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

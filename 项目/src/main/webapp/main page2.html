@@ -56,11 +56,11 @@
 
 
     <el-container>
-        <el-aside width="200px">
+        <el-aside width="150px">
 
             <el-row class="tac">
 
-                <el-col :span="24">
+                <el-col :span="27">
                     <el-menu
                             default-active="0"
                             class="el-menu-vertical-demo"
@@ -119,13 +119,23 @@
                                         <el-table-column  prop="senter" label="发送者"></el-table-column>
                                         <el-table-column  prop="message" label="消息内容"></el-table-column>
 
+
                                         <!-- 添加一个自定义列，包含按钮及行数显示 -->
                                         <el-table-column  width="200" label="操作">
                                             <template slot-scope="{ row, $index }">
                                                 <div style="display: flex;">
-                                                    <el-button type="success" icon="el-icon-check" v-if="row.message !== '退出群组'"  @click="handleConfirmButtonClick($index)">
-                                                    </el-button>
-                                                    <el-button type="danger"  icon="el-icon-delete" @click="handleDeleteButtonClick($index)">
+                                                    <!-- 第一个按钮 -->
+                                                    <el-button type="success" v-if="Authority> 1 && row.message !== '退出群组'" icon="el-icon-check" @click="handleConfirmButtonClick($index)">
+                                                     接受1</el-button>
+                                                    <!-- 第二个按钮 -->
+<!--                                                    <el-button type="success" v-if="Authority===1 && row.message !== '退出群组'" icon="el-icon-check"  @click="handleDeleteButtonClick($index)">-->
+<!--                                                     </el-button>-->
+                                                    <el-button type="success" v-if="Authority===1 && row.type === 'invitation'" icon="el-icon-check"  @click="UserAcceptInvitation($index)">
+                                                    接受2 </el-button>
+                                                    <el-button type="danger" v-if="Authority===1 &&row.type === 'invitation'" icon="el-icon-close"  @click="">
+                                                    拒绝 </el-button>
+                                                    <!-- 第三个按钮 -->
+                                                    <el-button type="danger" v-if="Authority>1||(Authority===1 &&row.type === 'reply')" icon="el-icon-delete" @click="handleDeleteButtonClick($index)">
                                                         删除
                                                     </el-button>
                                                 </div>
@@ -135,7 +145,8 @@
                                 </div>
                             </template>
 
-                            <el-button @click="GetMessageForAdmin" slot="reference">我的消息</el-button>
+                            <el-button v-if="Authority>1" @click="GetMessageForAdmin" slot="reference">我的消息</el-button>
+                            <el-button v-else @click="GetMessageForUser" slot="reference">我的消息</el-button>
                         </el-popover>
                         <div style="margin-left:100px;margin-top: 10px" >
 
@@ -147,7 +158,7 @@
 
                     </div>
                 </template>
-
+<!--                //加入群组的弹出框-->
                 <el-dialog
                         title="加入群组"
                         :visible.sync="dialogVisible2"
@@ -242,14 +253,14 @@
                                     label="企业方向">
                             </el-table-column>
                         </el-table>
-                        <el-switch v-if="currentTable === 'table3'&& this.Authority>1" style="margin-right:1050px "
+                        <el-switch v-if="currentTable === 'table3'&&Authority>1" style="margin-right:700px "
                                 v-model="value1"
                                 inactive-text="群组是否隐藏"
                             >
                         </el-switch>
                         <div style="display: flex; justify-content: space-between; margin-right: 500px; margin-bottom: 10px;">
-                            <el-button v-if="currentTable === 'table3'&&this.Authority>1" type="warning">注销群组</el-button>
-                            <el-button v-if="currentTable === 'table3'&&this.Authority>1" type="primary" @click="forExitgroup">邀请他人进入群组</el-button>
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="warning">注销群组</el-button>
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible3=true">邀请他人进入群组</el-button>
                             <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="forExitgroup">申请个人群组</el-button>
                             <el-button v-if="currentTable === 'table3'" type="primary" @click="forExitgroup">退出群组</el-button>
                         </div>
@@ -292,18 +303,25 @@
 
                 </el-dialog>
                 <!-- 修改头像的对话框 -->
-                <el-dialog
-                        title="修改头像"
-                        :visible.sync="dialogVisible1"
-                        width="30%"
-                        :before-close="handleClose1">
-                    <form id="avatarForm" enctype="multipart/form-data" ref="avatarForm">
-                        <input type="file" name="avatar" accept="image/*" required>
-                        <button  type="submit" @click="uploadAvatar">上传头像</button>
-                        <div id="resultMessage"></div>
-                    </form>
-                </el-dialog>
+<!--//邀请他人表格-->
+                <template>
+                    <el-dialog
+                            title="邀请他人"
+                            :visible.sync="dialogVisible3"
+                            width="30%"
+                            :before-close="handleClose3">
 
+                        <el-form :model="inviteForm" label-width="80px">
+                            <el-form-item label="姓名">
+                                <el-input v-model="inviteForm.name" placeholder="请输入被邀请人的姓名"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <span slot="footer" class="dialog-footer">
+      <el-button @click="dialogVisible3 = false">取消</el-button>
+      <el-button type="primary" @click="submitInvite">确认邀请</el-button>
+    </span>
+                    </el-dialog>
+                </template>
 
 
             </el-main>
@@ -370,9 +388,14 @@
                 gridData: [{
                     senter: '',
                     message: '',
+                    type:'',
+                    groupid:'',
                 },],
                 JoinGroup: {
                     companyName: ''
+                },
+                inviteForm: {
+                    name: '',
                 },
                 circleUrl: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
                 userId: '游客',
@@ -384,7 +407,9 @@
                 //修改头像对话框是否展示
                 dialogVisible1: false,
                 //加入群组的对话框
-                dialogVisible2 :false
+                dialogVisible2 :false,
+                //邀请他人加入群组的对话框
+                dialogVisible3:false,
             }
         },methods: {
             handleOpen(key, keyPath) {
@@ -406,6 +431,9 @@
             },
             handleClose2(done) {
                 this.dialogVisible2 = false;
+            },
+            handleClose3(done){
+                this.dialogVisible3 = false;
             },
             showPersonimf() {
                 if(this.userId==="null"){
@@ -551,6 +579,7 @@
                 var _this=this;
                 const currentRow = this.gridData[rowIndex];
                 const senter = currentRow.senter;
+                const type=currentRow.type;
                 this.gridData.splice(rowIndex, 1);
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/message/Agreement',
@@ -697,6 +726,8 @@
                         const Tdata = response.map(group => ({
                             senter:group.senter,
                             message:group.message,
+                            type:group.type,
+                            groupid:group.groupid,
                         }));
                         this.gridData = Tdata;
                     },
@@ -708,7 +739,7 @@
             },GetMessageForUser(){
                 var _this=this;
                 $.ajax({
-                    url: 'http://localhost:8080/jwt_test/message/ForAdminMessage',
+                    url: 'http://localhost:8080/jwt_test/message/ForUserMessage',
                     method: 'POST',
                     data:{id:_this.userId},
                     dataType: 'json',
@@ -717,6 +748,8 @@
                         const Tdata = response.map(group => ({
                             senter:group.senter,
                             message:group.message,
+                            type:group.type,
+                            groupid:group.groupid,
                         }));
                         this.gridData = Tdata;
                     },
@@ -726,7 +759,49 @@
                     }
                 });
             },
+            submitInvite() {
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/SendInvitation',
+                    method: 'POST',
+                    data:{recipient:_this.inviteForm.name,
+                          senter:this.userId},
+                    dataType: 'text',
+                    success:  (response) => {
+                       alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
 
+                this.dialogVisible3 = false;
+            },
+            UserAcceptInvitation(rowIndex) {
+                var _this = this;
+                const currentRow = this.gridData[rowIndex];
+                const senter = currentRow.senter;
+                const Nowgroupid=currentRow.groupid;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/UserAcceptInvitation',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        username:_this.userId,
+                        Thegroupname:Nowgroupid,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
 
             checkToken(){// 当页面加载完成后
                 // 在Vue实例创建时尝试从localStorage获取token
@@ -744,7 +819,8 @@
                             console.log("用户名：", tokenData.username);
                             this.userId = tokenData.username;
                             this.Authority=tokenData.authority;
-                            console.log("权限：", tokenData.authority);
+                            console.log("我的"+this.Authority);
+                            console.log("权限：",tokenData.authority);
                         }  if (tokenData && tokenData.avatar_url) {
                             console.log("图片路径：", tokenData.avatar_url);
                             const urlPrefix = 'images/'; // 假设图片位于Web应用的/images目录下

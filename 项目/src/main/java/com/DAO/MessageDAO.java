@@ -12,5 +12,11 @@ public interface MessageDAO {
 
     int DeleteMessage(String senter,String message);
 
-    int ForAgreement(String senter,String message);
+    int ForAgreement(String senter);
+
+    int SendInvitation(String senter,String recipient, String groupid);
+
+    int SendAgreementReply(String senter,String recipient,String groupid);
+
+    int DeleteInvitationMessage(String senter,String recipient,String type) ;
 }

@@ -24,7 +24,6 @@ public class MessageServlet extends BaseServlet {
        User user = userDao.selectByname(id);
        String groupname =user.getGroupid();
        List<Message> messages=messageDAO.AdminMessages(groupname);
-       System.out.println(messages);
        String jsonString= JSON.toJSONString(messages);
        resp.setContentType("text/json;charset=utf-8");
        resp.getWriter().write(jsonString);
@@ -36,7 +35,6 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
     User user = userDao.selectByname(id);
     String groupname =user.getGroupid();
     List<Message> messages=messageDAO.UserMessages(groupname,id);
-    System.out.println(messages);
     String jsonString= JSON.toJSONString(messages);
     resp.setContentType("text/json;charset=utf-8");
     resp.getWriter().write(jsonString);
@@ -47,20 +45,32 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
          String senter = req.getParameter("TheSenter");
          String message = req.getParameter("TheMessage");
          int i=messageDAO.DeleteMessage(senter,message);
-         System.out.println("影响："+i);
          resp.setCharacterEncoding("UTF-8");
          resp.getWriter().write("删除完毕");
 
      }
      public  void Agreement(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-         String senter = req.getParameter("TheSenter");
-         String id = req.getParameter("id");
+         String Thesenter = req.getParameter("TheSenter"); //zhangsan
+         String id = req.getParameter("id");   //lisi
          User user=userDao.selectByname(id);
          String groupname=user.getGroupid();
-         int b=userDao.ForAgreement(senter,groupname);
-         int i= messageDAO.ForAgreement(senter,"退出群组");
+         int b=userDao.ForAgreement(Thesenter,groupname);
+         int i= messageDAO.ForAgreement(Thesenter);
+         int c= messageDAO.SendAgreementReply(id,Thesenter,groupname);
          resp.setCharacterEncoding("UTF-8");
          resp.getWriter().write("添加完毕");
+
+     }
+
+     public void SendInvitation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+
+         String senter = req.getParameter("senter");
+         String recipient= req.getParameter("recipient");
+         User user=userDao.selectByname(senter);
+         String groupname=user.getGroupid();
+         int i= messageDAO.SendInvitation(senter,recipient,groupname);
+         resp.setCharacterEncoding("UTF-8");
+         resp.getWriter().write("成功发送邀请");
 
      }
 

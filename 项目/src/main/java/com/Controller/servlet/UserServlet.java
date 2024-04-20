@@ -1,7 +1,9 @@
 package com.Controller.servlet;
 
 import com.Controller.BaseServlet;
+import com.DAO.MessageDAO;
 import com.DAO.UserDAO;
+import com.DAO.impl.MessageDAOimpl;
 import com.DAO.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +37,7 @@ import java.util.*;
 @MultipartConfig // 启用文件上传功能
 public class UserServlet  extends BaseServlet {
     private final UserDAO userDao = new UserDAOImpl();
+    MessageDAO messageDAO= new MessageDAOimpl();
     private static final String UPLOAD_DIR = "src/main/webapp/images"; // 替换为实际的上传目录路径
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
     private static final String SECRET_KEY = "MykEY"; // 替换为你的密钥
@@ -190,7 +193,7 @@ public class UserServlet  extends BaseServlet {
         String senter = req.getParameter("senter");
         String groupid = req.getParameter("groupid");
         String message1 = req.getParameter("sendmessage");
-        Message message = new Message(senter, message1, groupid);
+        Message message = new Message(senter, message1, groupid,"application");
         int i = userDao.sendapplication(message);
         String jsonString= JSON.toJSONString("发送申请完毕");
         resp.setContentType("text/json;charset=utf-8");
@@ -203,7 +206,7 @@ public class UserServlet  extends BaseServlet {
         User user = userDao.selectByname(username);
         String groupname =user.getGroupid();
         int i = userDao.ExitGroup(username);
-        Message message = new Message(username,"退出群组", groupname);
+        Message message = new Message(username,"退出群组", groupname,"Exit");
         int b = userDao.sendapplication(message);
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> response = new HashMap<>();
@@ -214,6 +217,19 @@ public class UserServlet  extends BaseServlet {
             resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write(json);
         }
+    }
+
+    public void  UserAcceptInvitation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String username=req.getParameter("username");
+        String groupname=req.getParameter("Thegroupname");
+        String TheSenter=req.getParameter("TheSenter");
+        System.out.println("UserAcceptInvitation:"+username+groupname);
+        int i=userDao.ForAgreement(username,groupname);
+        messageDAO.DeleteInvitationMessage(TheSenter,username,"invitation");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已加入");
+
+
     }
     private void saveFileToDatabase(String filePath, String contentType, long contentLength, String userId) throws SQLException {
         Connection conn = null;
