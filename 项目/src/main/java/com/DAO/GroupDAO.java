@@ -13,4 +13,6 @@ public interface GroupDAO {
 
      Group selectById(String GroupName);
 
+     int ChangeGroupData(String groupname,String number,String scale,String direction,String visiable);
+
 }

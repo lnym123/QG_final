@@ -253,13 +253,10 @@
                                     label="企业方向">
                             </el-table-column>
                         </el-table>
-                        <el-switch v-if="currentTable === 'table3'&&Authority>1" style="margin-right:700px "
-                                v-model="value1"
-                                inactive-text="群组是否隐藏"
-                            >
-                        </el-switch>
+
                         <div style="display: flex; justify-content: space-between; margin-right: 500px; margin-bottom: 10px;">
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="warning">注销群组</el-button>
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible4=true" >设置群组信息</el-button>
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible3=true">邀请他人进入群组</el-button>
                             <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="forExitgroup">申请个人群组</el-button>
                             <el-button v-if="currentTable === 'table3'" type="primary" @click="forExitgroup">退出群组</el-button>
@@ -303,7 +300,7 @@
 
                 </el-dialog>
                 <!-- 修改头像的对话框 -->
-<!--//邀请他人表格-->
+            <!--//邀请他人表格-->
                 <template>
                     <el-dialog
                             title="邀请他人"
@@ -322,6 +319,32 @@
     </span>
                     </el-dialog>
                 </template>
+<!--                设置群组信息对话框-->
+                <el-dialog
+                        title="设置群组信息"
+                        :visible.sync="dialogVisible4"
+                        width="30%"
+                        :before-close="handleCloseForChange4">
+                    <el-form ref="form" :model="AdminChangeGroup" label-width="100px">
+
+                        <el-form-item label="企业人数">
+                            <el-input v-model="AdminChangeGroup.number"></el-input>
+                        </el-form-item>
+                        <el-form-item label="企业规模">
+                            <el-input v-model="AdminChangeGroup.scale"></el-input>
+                        </el-form-item>
+                        <el-form-item label="企业方向">
+                            <el-input v-model="AdminChangeGroup.direction"></el-input>
+                        </el-form-item>
+                        <el-form-item label="群组是否公开">
+                            <el-switch v-model="AdminChangeGroup.isvisiable"></el-switch>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="ForAdminChangeGroup">修改</el-button>
+                            <el-button @click="dialogVisible4 = false">取消</el-button>
+                        </el-form-item>
+                        </el-form>
+                </el-dialog>
 
 
             </el-main>
@@ -345,20 +368,27 @@
 
             data () {
             return {
-                value1: false,
+                value1: true,
                 currentTable: 'table1',
                 // 搜索框表单
                 formInline: {
                     name: '',
                     direction: ''
                 },
-                //修改数据的群组信息
+                //修改数据的信息
                 User: {
                     password: '',
                     location: '',
                     nickname: '',
                     PhoneNumber:'',
 
+                },
+                //修改群组信息
+                 AdminChangeGroup: {
+                    number: '',
+                    scale: '',
+                     direction:'',
+                     isvisiable:''
                 },
                 // 个人信息展示表格数据
                 tableData: [{
@@ -410,6 +440,8 @@
                 dialogVisible2 :false,
                 //邀请他人加入群组的对话框
                 dialogVisible3:false,
+                //设置群组信息对话框，
+                dialogVisible4:false,
             }
         },methods: {
             handleOpen(key, keyPath) {
@@ -434,6 +466,9 @@
             },
             handleClose3(done){
                 this.dialogVisible3 = false;
+            },
+            handleClose4(done){
+                this.dialogVisible4 = false;
             },
             showPersonimf() {
                 if(this.userId==="null"){
@@ -551,6 +586,7 @@
             },
             goBack() {
              this.currentTable="table1";
+             this.showgroups();
             },
             //消息删除
             handleDeleteButtonClick(rowIndex) {
@@ -752,6 +788,7 @@
                             groupid:group.groupid,
                         }));
                         this.gridData = Tdata;
+                        previousData = response;
                     },
                     error: (xhr, status, error) => {
                         console.error('请求失败:', error);
@@ -759,6 +796,9 @@
                     }
                 });
             },
+            var:intervalId = setInterval(function() {
+                pollDatabaseForUpdates();
+            }, 5000),
             submitInvite() {
                 var _this=this;
                 $.ajax({
@@ -802,6 +842,28 @@
                     },
                 })
             },
+            //群管理员修改企业信息
+            ForAdminChangeGroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ForAdminChangeGroup',
+                    method: 'POST',
+                    data: {
+                        id:_this.userId,
+                        number: this.AdminChangeGroup.number,
+                        scale: this.AdminChangeGroup.scale,
+                        direction: this.AdminChangeGroup.direction,
+                        visiable:this.AdminChangeGroup.isvisiable
+                    },
+                    dataType: 'text',
+                    success: function (response) {
+                        alert(response);
+                        _this.ShowPersonalGroup();
+                        _this.dialogVisible4=false;
+                    },
+                });
+            },
+
 
             checkToken(){// 当页面加载完成后
                 // 在Vue实例创建时尝试从localStorage获取token

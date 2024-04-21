@@ -21,8 +21,8 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
     @Override
     public List<Group> selectAll() {
         try {
-            String sql = "SELECT groupname,number,scale,direction FROM tb_group WHERE visible = ?";
-            return executeQuery(Group.class, sql, "yes");
+            String sql = "SELECT groupname,number,scale,direction FROM tb_group WHERE visiable = ?";
+            return executeQuery(Group.class, sql, "true");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -90,6 +90,16 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
         try {
             String sql = "SELECT groupname,number,scale,direction FROM tb_group where groupname = ?";
             return executeQueryBean(Group.class,sql,GroupName);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int ChangeGroupData(String groupname, String number, String scale, String direction, String visiable) {
+        try {
+            String sql = "UPDATE tb_group SET number=?,scale=?,direction=?,visiable=?  WHERE groupname = ?";
+            return executeUpdate(sql,number,scale,direction,visiable,groupname);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

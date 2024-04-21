@@ -2,6 +2,7 @@ package com.Controller.servlet;
 
 import com.Controller.BaseServlet;
 import com.DAO.GroupDAO;
+import com.DAO.MessageDAO;
 import com.DAO.UserDAO;
 import com.DAO.impl.GroupDAOimpl;
 import com.DAO.impl.UserDAOImpl;
@@ -56,5 +57,20 @@ public class GroupServlet extends BaseServlet {
 
 
     }
+    public void ForAdminChangeGroup (HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String id = req.getParameter("id");
+        String number = req.getParameter("number");
+        String scale = req.getParameter("scale");
+        String direction = req.getParameter("direction");
+        String visiable=req.getParameter("visiable");
+        User user = userDao.selectByname(id);
+        String groupname =user.getGroupid();
+        groupDAO.ChangeGroupData(groupname,number,scale,direction,visiable);
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("修改完毕");
 
+
+
+
+    }
 }
