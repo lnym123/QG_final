@@ -104,6 +104,35 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
             throw new RuntimeException(e);
         }
     }
+    @Override
+    public List<Group> selectAllForAdmin() {
+        try {
+            String sql = "SELECT groupname FROM tb_group ";
+            return executeQuery(Group.class, sql);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int OperateBanGroup(String id, String action) {
+        try {
+            String sql = "UPDATE tb_group SET Locked=? WHERE groupname = ?";
+            return executeUpdate(sql,action,id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int AgreeCreateGroup(String id) {
+        try {
+            String sql = "INSERT INTO tb_group(groupname,number) VALUES (?,?)";
+            return executeUpdate(sql,id,1);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }
 

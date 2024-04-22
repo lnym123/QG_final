@@ -110,7 +110,7 @@ public class UserServlet  extends BaseServlet {
         String password = req.getParameter("password");
         List<User> users = userDao.selectAll(username, password);
         User matchedUser = users.stream().findFirst().orElse(null);
-
+        System.out.println("到达1");
         resp.setContentType("application/json;charset=utf-8");
         PrintWriter out = resp.getWriter();
         // 验证用户名和密码（这里仅作简单示意，实际应使用更安全的方法）
@@ -123,7 +123,7 @@ public class UserServlet  extends BaseServlet {
                     .claim("avatar_url", matchedUser.getAvatar_url())
                     .claim("authority", matchedUser.getAuthority())
                     .claim("username", username)
-                    .claim("password", password)// 尽管不建议直接存储明文密码，但这里仅作示例
+                    .claim("password", password)
                     .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
 
                     .compact();
@@ -133,9 +133,10 @@ public class UserServlet  extends BaseServlet {
         } else if(Objects.equals(matchedUser.getUsername(), "游客")) {
             System.out.println("1");
             String token = Jwts.builder()
-                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
+                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
                     .claim("username", "null")
-                    .claim("password", password)// 尽管不建议直接存储明文密码，但这里仅作示例
+                    .claim("password", password)
+                    .claim("authority", matchedUser.getAuthority())
                     .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
                     .compact();
             System.out.println(token);
@@ -223,14 +224,48 @@ public class UserServlet  extends BaseServlet {
         String username=req.getParameter("username");
         String groupname=req.getParameter("Thegroupname");
         String TheSenter=req.getParameter("TheSenter");
-        System.out.println("UserAcceptInvitation:"+username+groupname);
         int i=userDao.ForAgreement(username,groupname);
         messageDAO.DeleteInvitationMessage(TheSenter,username,"invitation");
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已加入");
 
+    }
+
+    public void  selectAllUserForAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        List<User> users =userDao.selectAllUser();
+
+        String jsonString= JSON.toJSONString(users);
+        resp.setContentType("text/json;charset=utf-8");
+        resp.getWriter().write(jsonString);
+    }
+
+    public void ForAdminBanUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String id = req.getParameter("id");
+        int i=userDao.OperateBanUser(id,"true");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已封禁");
 
     }
+    public void ForAdminUnBanUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String id = req.getParameter("id");
+        int i=userDao.OperateBanUser(id,"false");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已解禁");
+
+    }
+    public void UserDenyInvitation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String id = req.getParameter("username");
+        String thesenter = req.getParameter("TheSenter");
+        String groupid = req.getParameter("groupid");
+        messageDAO.DeleteInvitationMessage(thesenter,id,"invitation");
+        messageDAO.SendUserDenyMessage(thesenter,id,groupid);
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已拒绝");
+    }
+
+
+
+
     private void saveFileToDatabase(String filePath, String contentType, long contentLength, String userId) throws SQLException {
         Connection conn = null;
         PreparedStatement stmt = null;

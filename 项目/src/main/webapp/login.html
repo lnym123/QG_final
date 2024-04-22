@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Login & Register</title>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="lib/jquery-3.7.1.min.js"></script>
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-
-    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+      <script src="lib/jquery-3.7.1.min.js"></script>
+       <script src="lib/vue.js"></script>
+        <script src="element-ui/lib/index.js"></script>
+        <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
 </head>
 
 <body>
@@ -64,6 +63,7 @@
         el: "#app",
         data() {
             return {
+                userId:"",
                 activeTab: "login",
                 loginForm: {
                     username: "",
@@ -81,6 +81,7 @@
         },
         methods: {
             handleLogin(event) {
+                var _this=this;
                 console.log("登录表单提交:", this.loginForm);
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/user/ForLogin',
@@ -91,6 +92,12 @@
                         var jwtToken = response.token;
                         localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
                         // 登录成功后的操作，如跳转页面等
+                        _this.checkToken();
+                        if(_this.userId==='admin'){
+
+                            window.location.href = "adminpage.html";
+                            return;
+                        }
                         window.location.href = "main page2.html";
                     },
                     error: (xhr, status, error) => {
@@ -99,6 +106,7 @@
                 })
             },
             handleTouristLogin() {
+
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/user/ForLogin',
                     method: 'POST',
@@ -109,6 +117,7 @@
                         var jwtToken = response.token;
                         localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
                         // 登录成功后的操作，如跳转页面等
+
                         window.location.href = "main page2.html";
                     },
                     error: (xhr, status, error) => {
@@ -131,6 +140,33 @@
                         // 处理登录失败逻辑
                     }
                 })
+            },
+            checkToken(){// 当页面加载完成后
+                // 在Vue实例创建时尝试从localStorage获取token
+                this.token = localStorage.getItem('jwtToken');
+                if (this.token) {
+                    try {
+                        // 分割JWT字符串为三部分: header.payload.signature
+                        const [header, payload, signature] = this.token.split('.');
+                        // Base64解码负载部分
+                        const decodedPayload = window.atob(payload);
+                        // 解析负载部分的JSON字符串
+                        const tokenData = JSON.parse(decodedPayload);
+                        // 从token数据中提取username并赋值给userId
+                        if (tokenData && tokenData.username) {
+                            console.log("用户名：", tokenData.username);
+                            this.userId = tokenData.username;
+
+
+
+                        }
+                    } catch (error) {
+                        console.error('解析token时出错:', error);
+                    }
+                } else {
+                    console.log('localStorage中没有找到token');
+                }
+
             }
         }
     });

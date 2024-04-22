@@ -7,6 +7,26 @@ public class User {
 
     private Integer id;
 
+    private String username;
+    private String password;
+
+    private String location;
+
+    private String nickname;
+
+    private String PhoneNumber;
+
+    private int authority;
+    private String groupid;
+
+    private String avatar_url;
+
+    private int Personalfunds;
+
+    private int Groupfunds;
+
+    private String Locked;
+
     public User(String username, String password, String location, String nickname, String phoneNumber) {
         this.username = username;
         this.password = password;
@@ -20,22 +40,8 @@ public class User {
         this.password = password;
     }
 
-    private String username;
-    private String password;
-
-    private String location;
-
-    private String nickname;
-
-    private String PhoneNumber;
-
-
-    private int authority;
-    private String groupid;
-
-    private String avatar_url;
     public User() {
-        // 可以为空，也可以初始化一些默认值
+
     }
 
     @Override

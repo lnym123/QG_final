@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员页面</title>
+    <script src="lib/jquery-3.7.1.min.js"></script>
+    <script src="lib/vue.js"></script>
+    <script src="element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+</head>
+<style>
+    .el-header, .el-footer {
+        background-color: #B3C0D1;
+        color: #333;
+        text-align: left;
+        line-height: 60px;
+
+    }
+
+    .el-aside {
+        background-color: #D3DCE6;
+        color: #333;
+        text-align:center;
+        line-height: 200px;
+    }
+    .el-main {
+        background-color: #E9EEF3;
+        color: #333;
+        text-align: center;
+        line-height: 10px;
+    }
+
+    body > .el-container {
+        margin-bottom: 40px;
+    }
+
+    .el-container:nth-child(5) .el-aside,
+    .el-container:nth-child(6) .el-aside {
+        line-height: 260px;
+    }
+
+    .el-container:nth-child(7) .el-aside {
+        line-height: 320px;
+    }
+    .message-button-container {
+        display: flex;
+        justify-content: flex-end; /* 右对齐 */
+        align-items: center; /* 与头部其他元素垂直居中 */
+        margin-right: 10px; /* 添加一点右侧间距 */
+    }
+</style>
+<body>
+<div id="app">
+    <el-container>
+        <el-header>
+            <div v-if="userId" class="user-id-display">
+                {{ userId }}
+                <el-popover
+                        placement="right"
+                        width="400"
+                        trigger="click">
+                    <template>
+                        <div>
+                            <el-table :data="gridData" style="width: 100%">
+                                <el-table-column  prop="senter" label="发送者"></el-table-column>
+                                <el-table-column  prop="message" label="消息内容"></el-table-column>
+
+
+                                <!-- 添加一个自定义列，包含按钮及行数显示 -->
+                                <el-table-column  width="300" label="操作">
+                                    <template slot-scope="{ row, $index }">
+                                        <div style="display: flex;">
+                                            <!-- 根据数据的type属性显示不同的按钮 -->
+                                            <el-button
+                                                    v-if="row.type === 'ban'"
+                                                    type="success"
+                                                    icon="el-icon-check"
+                                                    @click="handleBanConfirmButtonClick($index),handleDeleteButtonClick($index)">
+                                                接受
+                                            </el-button>
+                                            <el-button
+                                                    v-else-if="row.type !== 'ban'"
+                                                    type="success"
+                                                    icon="el-icon-check"
+                                                    @click="handleGroupConfirmButtonClick($index),handleDeleteButtonClick($index)">
+                                                接受
+                                            </el-button>
+
+                                            <el-button
+                                                    v-if="row.type === 'ban'"
+                                                    type="danger"
+                                                    icon="el-icon-close"
+                                                    @click="handleBanCancelButtonClick($index),handleDeleteButtonClick($index)">
+                                                拒绝
+                                            </el-button>
+                                            <el-button
+                                                    v-else
+                                                    type="danger"
+                                                    icon="el-icon-close"
+                                                    @click="handleGroupCancelButtonClick($index)">
+                                                拒绝
+                                            </el-button>
+                                        </div>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                    </template>
+
+                    <el-button style="margin-left:600px" @click="GetMessage" slot="reference">我的消息</el-button>
+                </el-popover>
+                <el-button style="margin-left:100px"  type="primary" @click="forLogout" >退出登录</el-button>
+            </div>
+
+        </el-header>
+        <el-main>  <template>
+            <el-table
+                    :data="PersonData"
+                    style="width: 100%">
+                <el-table-column
+                        prop="name"
+                        label="用户名"
+                        width="180">
+                </el-table-column>
+
+                <el-table-column label="操作" width="180">
+                    <template slot-scope="scope">
+                        <el-button type="text"  @click="handleUserBan(scope.$index)">封禁</el-button>
+                        <el-button type="text"  @click="handleUserUnban(scope.$index)">解封</el-button>
+                    </template>
+                </el-table-column>
+
+            </el-table>
+            <el-table
+                    :data="GroupData"
+                    style="width: 100%">
+                <el-table-column
+                        prop="name"
+                        label="企业名"
+                        width="180">
+                </el-table-column>
+
+                <el-table-column label="操作" width="180">
+                    <template slot-scope="scope">
+                        <el-button type="text"  @click="handleGroupBan(scope.$index)">封禁</el-button>
+                        <el-button type="text"  @click="handleGroupUnban(scope.$index)">解封</el-button>
+                    </template>
+                </el-table-column>
+
+            </el-table>
+        </template>
+
+        </el-main>
+    </el-container>
+
+</div>
+
+
+</body>
+<script>
+    new Vue({
+        el: "#app",
+        mounted() {
+            this.checkToken();
+            this.selectAllUser();
+            this.selectAllGroup()
+        },
+
+        data() {
+            return {
+                userId: "",
+                PersonData: [{
+                    name: "",
+                }],
+                GroupData: [{
+                    name: "",
+                }],
+                //消息
+                gridData: [{
+                    senter: '',
+                    message: '',
+                    type:'',
+                    groupid:'',
+                },],
+
+            }
+        },
+        methods: {
+            checkToken() { // 当页面加载完成后
+                // 从localStorage获取token
+                const jwtToken = localStorage.getItem('jwtToken');
+                if (jwtToken) {
+                    try {
+                        // 分割JWT字符串为三部分: header.payload.signature
+                        const [header, payload, signature] = jwtToken.split('.');
+                        // Base64解码负载部分
+                        const decodedPayload = window.atob(payload);
+                        // 解析负载部分的JSON字符串
+                        const tokenData = JSON.parse(decodedPayload);
+                        // 从token数据中提取username和circleUrl（假设存在）并赋值给对应属性
+                        if (tokenData && tokenData.username) {
+                            console.log("用户名：", tokenData.username);
+                            this.userId = tokenData.username;
+
+                        }
+                    } catch (error) {
+                        console.error('解析token时出错:', error);
+                    }
+                } else {
+                    console.log('localStorage中没有找到token');
+                }
+            }, forLogout() {
+                const TOKEN_KEY = 'jwtToken';
+                localStorage.removeItem(TOKEN_KEY);
+                window.location.href = "login.html";
+            },
+            selectAllUser() {
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/selectAllUserForAdmin',
+                    method: 'POST',
+                    dataType: 'json',
+                    success: (response) => {
+                        const Tdata = response.map(group => ({
+                            name: group.username,
+                        }));
+                        this.PersonData = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            }, selectAllGroup() {
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/selectAllGroupForAdmin',
+                    method: 'POST',
+                    dataType: 'json',
+                    success: (response) => {
+                        const Tdata = response.map(group => ({
+                            name: group.groupname,
+                        }));
+                        this.GroupData = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            }, handleUserBan(index) {
+                const currentRow = this.PersonData[index];
+                const _id = currentRow.name;
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ForAdminBanUser',
+                    method: 'POST',
+                    data: {id: _id},
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            // 用户解封方法
+            handleUserUnban(index) {
+                const currentRow = this.PersonData[index];
+                const _id = currentRow.name;
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ForAdminUnBanUser',
+                    method: 'POST',
+                    data: {id: _id},
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            // 组封禁方法
+            handleGroupBan(index) {
+                const currentRow = this.GroupData[index];
+                const _id = currentRow.name;
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ForAdminBanGroup',
+                    method: 'POST',
+                    data: {id: _id},
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            // 组解封方法
+            handleGroupUnban(index) {
+                const currentRow = this.GroupData[index];
+                const _id = currentRow.name;
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ForAdminUnBanGroup',
+                    method: 'POST',
+                    data: {id: _id},
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            GetMessage() {
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForHighAdminMessage',
+                    method: 'POST',
+                    dataType: 'json',
+                    success: (response) => {
+                        // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                        const Tdata = response.map(group => ({
+                            senter: group.senter,
+                            message: group.message,
+                            groupid:group.groupid,
+                            type: group.type,
+                        }));
+                        this.gridData = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+                //处理用户申请解禁
+            },handleBanConfirmButtonClick(index){
+                const currentRow = this.gridData[index];
+                const _id = currentRow.senter;
+
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ForAdminUnBanUser',
+                    method: 'POST',
+                    data: {id: _id},
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+                //拒绝用户解禁
+            }, handleBanCancelButtonClick(rowIndex){
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                // // 获取当前行的 senter 和 message 数据
+                const senter = currentRow.senter;
+                const message = currentRow.message;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/handleBanCancel',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        TheMessage:message,
+                        TheRecipient:senter
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);},
+                    error:{},
+                })
+
+            },
+            //接受用户创建群组
+            handleGroupConfirmButtonClick(rowIndex){
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                const senter = currentRow.senter;
+                const groupid = currentRow.groupid;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/AgreeCreateGroupMessage',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        Thegroupid:groupid
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                    },
+                    error:{},
+                })
+            },
+            //拒绝用户申请群组
+            handleGroupCancelButtonClick(rowIndex){
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                // // 获取当前行的 senter 和 message 数据
+                const senter = currentRow.senter;
+                const message = currentRow.message;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/GroupApplicationCancel',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        TheMessage:message,
+                        TheRecipient:senter
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);},
+                    error:{},
+                })
+            },
+            //消息删除
+            handleDeleteButtonClick(rowIndex) {
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                // // 获取当前行的 senter 和 message 数据
+                const senter = currentRow.senter;
+                const message = currentRow.message;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/DeleteMessage',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        TheMessage:message
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                    },
+                    error:{},
+                })
+            },
+
+        }
+    })
+</script>
+
+</html>

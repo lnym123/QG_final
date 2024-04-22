@@ -10,8 +10,8 @@ public  class MessageDAOimpl extends BaseDAO implements MessageDAO {
     @Override
     public List<Message> AdminMessages(String groupId) {
         try {
-            String sql = "SELECT senter,message,groupid,type FROM tb_message WHERE groupid = ?AND type IN (?,?,?)";
-            return executeQuery(Message.class, sql, groupId,"application","Exit","reply");
+            String sql = "SELECT senter,message,groupid,type FROM tb_message WHERE groupid = ?AND type IN (?,?,?,?)";
+            return executeQuery(Message.class, sql, groupId,"application","Exit","reply","ban");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -75,4 +75,46 @@ public  class MessageDAOimpl extends BaseDAO implements MessageDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public int ApplyOwnGroup(String senter, String groupid) {
+        try {
+            String sql = "INSERT INTO tb_message(senter,message,recipient,groupid,type) VALUES (?,?,?,?,?)";
+            return executeUpdate(sql,senter,"申请创办"+groupid,"admin",groupid,"application");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<Message> GetHighAdminMessage() {
+        try {
+            String sql = "SELECT senter, message,groupid,type FROM tb_message WHERE recipient = ? AND type IN (?, ?) ";
+            return executeQuery(Message.class, sql, "admin", "application","ban");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int SendDenyMessage(String recipient,String message) {
+        try {
+            String sql = "INSERT INTO tb_message(senter,message,recipient,type) VALUES (?,?,?,?)";
+            return executeUpdate(sql,"网站管理员",message,recipient,"reply");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int SendUserDenyMessage(String recipient,String senter,String groupid) {
+        try {
+            String sql = "INSERT INTO tb_message(senter,message,groupid,recipient,type) VALUES (?,?,?,?,?)";
+            return executeUpdate(sql,senter, "拒绝了你的邀请",groupid,recipient,"reply");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 }

@@ -15,4 +15,9 @@ public interface GroupDAO {
 
      int ChangeGroupData(String groupname,String number,String scale,String direction,String visiable);
 
+     List<Group> selectAllForAdmin();
+
+     int OperateBanGroup(String id, String action);
+
+     int AgreeCreateGroup(String id);
 }

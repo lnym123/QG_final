@@ -9,6 +9,7 @@ import com.DAO.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.pojo.Group;
 import com.pojo.User;
+import org.junit.Test;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -19,7 +20,7 @@ import java.util.List;
 
 @WebServlet("/group/*")
 public class GroupServlet extends BaseServlet {
-    GroupDAO groupDAO =new GroupDAOimpl();
+    private final  GroupDAO groupDAO =new GroupDAOimpl();
     private final UserDAO userDao = new UserDAOImpl();
 
     public void GroupQueryService(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -68,9 +69,25 @@ public class GroupServlet extends BaseServlet {
         groupDAO.ChangeGroupData(groupname,number,scale,direction,visiable);
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("修改完毕");
+    }
+    public void selectAllGroupForAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        List<Group> groups=groupDAO.selectAllForAdmin();
+        String jsonString= JSON.toJSONString(groups);
+        resp.setContentType("text/json;charset=utf-8");
+        resp.getWriter().write(jsonString);
+    }
 
+    public void ForAdminBanGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String id = req.getParameter("id");
+        int i=groupDAO.OperateBanGroup(id,"true");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已封禁");
+    }
 
-
-
+    public void ForAdminUnBanGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String id = req.getParameter("id");
+        int i=groupDAO.OperateBanGroup(id,"false");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已封禁");
     }
 }

@@ -19,4 +19,12 @@ public interface MessageDAO {
     int SendAgreementReply(String senter,String recipient,String groupid);
 
     int DeleteInvitationMessage(String senter,String recipient,String type) ;
+
+    int ApplyOwnGroup(String senter,String groupid);
+
+    List<Message> GetHighAdminMessage();
+    //发生网站管理员拒接请求
+    int SendDenyMessage(String recipient,String message);
+    //发送用户拒绝企业请求
+    int SendUserDenyMessage(String recipient,String groupid,String senter);
 }

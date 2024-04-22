@@ -78,5 +78,35 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public List<User> selectAllUser() {
+        try {
+            String sql = "SELECT username,password FROM tb_user";
+            return executeQuery(User.class,sql);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int OperateBanUser(String username,String action) {
+        try {
+            String sql = "UPDATE tb_user SET Locked = ? WHERE username = ?";
+            return executeUpdate(sql,action,username);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int AgreeCreateGroupMessage(String username, String groupid) {
+        try {
+            String sql = "UPDATE tb_user SET groupid=?,authority=? WHERE username = ?";
+            return executeUpdate(sql,groupid,2,username);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
 

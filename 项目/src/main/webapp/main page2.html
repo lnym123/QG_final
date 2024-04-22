@@ -4,14 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
     <script src="lib/vue.js"></script>
     <script src="element-ui/lib/index.js"></script>
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <script src="lib/jquery-3.7.1.min.js"></script>
     <script src="lib/axios-0.18.0.js"></script>
-    <script src="lib/vue-router.global.js"></script>
 
 </head>
 
@@ -66,18 +63,18 @@
                             class="el-menu-vertical-demo"
                             @open="handleOpen"
                             @close="handleClose">
-                        <el-menu-item  >
+                        <el-menu-item index="1">
                             <span slot="title">QG资金管理系统</span>
                         </el-menu-item>
-                        <el-menu-item index="3" >
+                        <el-menu-item index="2" @click="showPersonimf">
                             <i class="el-icon-user"></i>
-                            <span @click="showPersonimf" slot="title">个人中心</span>
+                            <span slot="title">个人中心</span>
                         </el-menu-item>
-                        <el-menu-item index="5">
+                        <el-menu-item index="3" @click="ShowPersonalGroup">
                             <i class="el-icon-s-cooperation"></i>
-                            <span @click="() => { ShowPersonalGroup(); open1(); }" slot="title">我的群组</span>
+                            <span slot="title">我的群组</span>
                         </el-menu-item>
-                        <el-menu-item index="4" >
+                        <el-menu-item index="4">
                             <i class="el-icon-s-data"></i>
                             <span slot="title">资金中心</span>
                         </el-menu-item>
@@ -125,14 +122,11 @@
                                             <template slot-scope="{ row, $index }">
                                                 <div style="display: flex;">
                                                     <!-- 第一个按钮 -->
-                                                    <el-button type="success" v-if="Authority> 1 && row.message !== '退出群组'" icon="el-icon-check" @click="handleConfirmButtonClick($index)">
+                                                    <el-button type="success" v-if="Authority> 1 && row.message !== '退出群组'&&row.type !== 'reply'" icon="el-icon-check" @click="handleConfirmButtonClick($index),handleDeleteButtonClick($index)">
                                                      接受1</el-button>
-                                                    <!-- 第二个按钮 -->
-<!--                                                    <el-button type="success" v-if="Authority===1 && row.message !== '退出群组'" icon="el-icon-check"  @click="handleDeleteButtonClick($index)">-->
-<!--                                                     </el-button>-->
                                                     <el-button type="success" v-if="Authority===1 && row.type === 'invitation'" icon="el-icon-check"  @click="UserAcceptInvitation($index)">
                                                     接受2 </el-button>
-                                                    <el-button type="danger" v-if="Authority===1 &&row.type === 'invitation'" icon="el-icon-close"  @click="">
+                                                    <el-button type="danger" v-if="Authority===1 &&row.type === 'invitation'" icon="el-icon-close"  @click="UserDenyInvitation($index)">
                                                     拒绝 </el-button>
                                                     <!-- 第三个按钮 -->
                                                     <el-button type="danger" v-if="Authority>1||(Authority===1 &&row.type === 'reply')" icon="el-icon-delete" @click="handleDeleteButtonClick($index)">
@@ -258,7 +252,7 @@
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="warning">注销群组</el-button>
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible4=true" >设置群组信息</el-button>
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible3=true">邀请他人进入群组</el-button>
-                            <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="forExitgroup">申请个人群组</el-button>
+                            <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="dialogVisible5 = true">申请我的群组</el-button>
                             <el-button v-if="currentTable === 'table3'" type="primary" @click="forExitgroup">退出群组</el-button>
                         </div>
 
@@ -268,7 +262,7 @@
                 <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible = true">修改数据</el-button>
                 <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible1 = true">修改头像</el-button>
                 <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="forLogout" >退出登录</el-button>
-
+<!--           资金中心的页面-->
 
 
 
@@ -345,6 +339,23 @@
                         </el-form-item>
                         </el-form>
                 </el-dialog>
+<!--                申请个人群组对话框-->
+                <el-dialog
+                        title="设置群组信息"
+                        :visible.sync="dialogVisible5"
+                        width="30%"
+                        :before-close="handleCloseForChange5">
+                    <el-form ref="form" :model="ApplyOwnGroup" label-width="100px">
+                        <el-form-item label="企业名称">
+                            <el-input v-model="ApplyOwnGroup.groupname"></el-input>
+                        </el-form-item>
+                        <div style="margin-bottom: 30px">其余企业信息待申请成功自行修改</div>
+                        <el-form-item>
+                            <el-button type="primary" @click="ForApplyOwnGroup">提交</el-button>
+                            <el-button @click="dialogVisible5 = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
 
 
             </el-main>
@@ -389,6 +400,10 @@
                     scale: '',
                      direction:'',
                      isvisiable:''
+                },
+                ApplyOwnGroup:{
+                    groupname:'',
+
                 },
                 // 个人信息展示表格数据
                 tableData: [{
@@ -442,6 +457,8 @@
                 dialogVisible3:false,
                 //设置群组信息对话框，
                 dialogVisible4:false,
+                //申请个人群组的对话框
+                dialogVisible5:false,
             }
         },methods: {
             handleOpen(key, keyPath) {
@@ -470,8 +487,11 @@
             handleClose4(done){
                 this.dialogVisible4 = false;
             },
+            handleClose5(done){
+                this.dialogVisible5 = false;
+            },
             showPersonimf() {
-                if(this.userId==="null"){
+                if(this.userId==="游客"){
                     alert("请先点击头像登录");
                     return;
                 }
@@ -499,6 +519,7 @@
                 });
                 this.currentTable="table2";
             },showgroups() {
+
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/group/ShowGroups',
                     method: 'POST',
@@ -616,7 +637,8 @@
                 const currentRow = this.gridData[rowIndex];
                 const senter = currentRow.senter;
                 const type=currentRow.type;
-                this.gridData.splice(rowIndex, 1);
+
+
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/message/Agreement',
                     method: 'POST',
@@ -667,6 +689,10 @@
             },
             //处理用户申请加入群组
             handleJoinGroup() {
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/user/Sendapplication',
                     method: 'POST',
@@ -696,6 +722,10 @@
             },
             //展示个人群组数据
             ShowPersonalGroup(){
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
                 this.currentTable="table3";
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/group/ShowPersonalGroup',
@@ -863,6 +893,46 @@
                     },
                 });
             },
+            ForApplyOwnGroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForApplyOwnGroup',
+                    method: 'POST',
+                    data: {
+                        TheSenter:_this.userId,
+                        TheGroupId:this.ApplyOwnGroup.groupname
+                    },
+                    dataType: 'text',
+                    success: function (response) {
+                        alert(response);
+                        _this.dialogVisible5=false;
+                    },
+                });
+            },
+            UserDenyInvitation(rowIndex){
+                var _this = this;
+                const currentRow = this.gridData[rowIndex];
+                const senter = currentRow.senter;
+                const Thegroupid= currentRow.groupid
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/UserDenyInvitation',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        username:_this.userId,
+                        groupid:Thegroupid
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
 
 
             checkToken(){// 当页面加载完成后
@@ -883,6 +953,9 @@
                             this.Authority=tokenData.authority;
                             console.log("我的"+this.Authority);
                             console.log("权限：",tokenData.authority);
+                            if(this.Authority===0){
+                                this.userId="游客"
+                            }
                         }  if (tokenData && tokenData.avatar_url) {
                             console.log("图片路径：", tokenData.avatar_url);
                             const urlPrefix = 'images/'; // 假设图片位于Web应用的/images目录下
