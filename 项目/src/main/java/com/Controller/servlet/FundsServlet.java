@@ -24,4 +24,18 @@ public class FundsServlet extends BaseServlet {
         resp.getWriter().write(jsonString);
 
     }
+    public void fundsQueryService(HttpServletRequest request,HttpServletResponse resp) throws ServletException, IOException {
+        String name = request.getParameter("name");
+        String content = request.getParameter("content");
+        String username = request.getParameter("username");
+        System.out.println("username:"+username);
+
+        List<Funds> funds= fundDAO.selectByCondition(username,name,content);
+        String jsonString= JSON.toJSONString(funds);
+        resp.setContentType("text/json;charset=utf-8");
+        resp.getWriter().write(jsonString);
+
+
+
+    }
 }

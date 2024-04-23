@@ -17,4 +17,14 @@ public class FundDAOimpl extends BaseDAO implements FundDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public List<Funds> selectByCondition(String username,String name, String content) {
+        try {
+            String sql = "SELECT transaction_object, transaction_time, amount, transaction_status, type FROM tb_funds WHERE username=? AND " + name + " = ?";
+            return executeQuery(Funds.class, sql, username,content);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

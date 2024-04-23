@@ -131,9 +131,9 @@
                                                 <div style="display: flex;">
                                                     <!-- 第一个按钮 -->
                                                     <el-button type="success" v-if="Authority> 1 && row.message !== '退出群组'&&row.type !== 'reply'" icon="el-icon-check" @click="handleConfirmButtonClick($index),handleDeleteButtonClick($index)">
-                                                     接受1</el-button>
+                                                     接受</el-button>
                                                     <el-button type="success" v-if="Authority===1 && row.type === 'invitation'" icon="el-icon-check"  @click="UserAcceptInvitation($index)">
-                                                    接受2 </el-button>
+                                                    接受 </el-button>
                                                     <el-button type="danger" v-if="Authority===1 &&row.type === 'invitation'" icon="el-icon-close"  @click="UserDenyInvitation($index)">
                                                     拒绝 </el-button>
                                                     <!-- 第三个按钮 -->
@@ -274,11 +274,11 @@
                     <el-form :inline="true" style="margin-left: 100px;">
                         <el-form-item label="分类查看">
                             <el-select v-model="classificationFlow.name" placeholder="请选择类型" style="width: 200px;">
-                                <el-option label="交易对象" value="object"></el-option>
-                                <el-option label="交易时间" value="time"></el-option>
+                                <el-option label="交易对象" value="transaction_object"></el-option>
+                                <el-option label="交易时间" value="transaction_time"></el-option>
                                 <el-option label="交易类型" value="type"></el-option>
                                 <el-option label="交易金额" value="amount"></el-option>
-                                <el-option label="交易状态" value="status"></el-option>
+                                <el-option label="交易状态" value="transaction_status"></el-option>
                                 <el-option label="全部" value="all" divided></el-option>
                             </el-select>
                         </el-form-item>
@@ -449,7 +449,7 @@
                 value1: true,
                 //用户个人资金
                 userFund:"",
-                currentTable: 'table2',
+                currentTable: 'table1',
                 //流水的分类查询
                 classificationFlow:{
                     name:"",
@@ -1039,29 +1039,40 @@
             //     content:""
             // },
             selectFlow(){
-
-                if ((this.classificationFlow.name === null || classificationFlow.name === undefined || classificationFlow.name === "") &&
-                    (this.classificationFlow.content === null || this.classificationFlow.content === undefined || this.classificationFlow.content === "")){
-
-                    this.showgroups();
+                if(this.classificationFlow.name==="all"){
+                    this.getPersonalFlow();
                     return;
                 }
+                if ((this.classificationFlow.name === null || this.classificationFlow.name === undefined ||  this.classificationFlow.name === "") &&
+                    (this.classificationFlow.content === null || this.classificationFlow.content === undefined || this.classificationFlow.content === "")){
+                    this.getPersonalFlow();
+                    return;
+                }
+
+                if(this.classificationFlow.content === null || this.classificationFlow.content === undefined || this.classificationFlow.content === ""){
+                    alert("请输入查询内容");
+                    return;
+                }
+                var _this=this;
                 $.ajax({
-                    url: 'http://localhost:8080/jwt_test/group/GroupQueryService',
+                    url: 'http://localhost:8080/jwt_test/funds/fundsQueryService',
                     method: 'POST',
                     data: {
-                        groupName:this.formInline.name,
-                        direction:this.formInline.direction
+                        name:this.classificationFlow.name,
+                        content:this.classificationFlow.content,
+                        username:_this.userId
                     },
                     dataType: 'json',
                     success:  (response) => {
                         const tableData1 = response.map(group => ({
-                            groupname: group.groupname,
-                            number: group.number,
-                            scale: group.scale,
-                            direction: group.direction,
+                            object:group.transaction_object,
+                            time:group.transaction_time,
+                            amount:group.amount,
+                            status:group.transaction_status,
+                            type:group.type
+
                         }));
-                        this.tableData1 = tableData1;
+                        this.PersonalFlow= tableData1;
                     },
                     error: (xhr, status, error) => {
                         console.error('请求失败:', error);

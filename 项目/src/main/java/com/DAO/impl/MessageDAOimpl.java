@@ -10,7 +10,7 @@ public  class MessageDAOimpl extends BaseDAO implements MessageDAO {
     @Override
     public List<Message> AdminMessages(String groupId) {
         try {
-            String sql = "SELECT senter,message,groupid,type FROM tb_message WHERE groupid = ?AND type IN (?,?,?,?)";
+            String sql = "SELECT senter,message,groupid,type FROM tb_message WHERE groupid = ?AND `type` IN (?,?,?,?)";
             return executeQuery(Message.class, sql, groupId,"application","Exit","reply","ban");
         } catch (Exception e) {
             throw new RuntimeException(e);
