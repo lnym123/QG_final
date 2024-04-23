@@ -21,6 +21,30 @@ public class User {
 
     private String avatar_url;
 
+    public int getPersonalfunds() {
+        return Personalfunds;
+    }
+
+    public void setPersonalfunds(int personalfunds) {
+        Personalfunds = personalfunds;
+    }
+
+    public int getGroupfunds() {
+        return Groupfunds;
+    }
+
+    public void setGroupfunds(int groupfunds) {
+        Groupfunds = groupfunds;
+    }
+
+    public String getLocked() {
+        return Locked;
+    }
+
+    public void setLocked(String locked) {
+        Locked = locked;
+    }
+
     private int Personalfunds;
 
     private int Groupfunds;

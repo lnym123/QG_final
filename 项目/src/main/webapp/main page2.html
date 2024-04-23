@@ -20,7 +20,13 @@
         line-height: 60px;
 
     }
-
+    .el-dropdown-link {
+        cursor: pointer;
+        color: #409EFF;
+    }
+    .el-icon-arrow-down {
+        font-size: 12px;
+    }
     .el-aside {
         background-color: #D3DCE6;
         color: #333;
@@ -30,7 +36,7 @@
     .el-main {
         background-color: #E9EEF3;
         color: #333;
-        text-align: center;
+        text-align: left;
         line-height: 10px;
     }
 
@@ -66,7 +72,7 @@
                         <el-menu-item index="1">
                             <span slot="title">QG资金管理系统</span>
                         </el-menu-item>
-                        <el-menu-item index="2" @click="showPersonimf">
+                        <el-menu-item index="2" @click="showPersonimf(), getPersonalFlow()">
                             <i class="el-icon-user"></i>
                             <span slot="title">个人中心</span>
                         </el-menu-item>
@@ -104,8 +110,10 @@
                             </el-form-item>
 
                         </el-form>
-
                         <el-button  size="mini" v-else-if="currentTable === 'table2'||currentTable === 'table3'"  type="primary" @click="goBack">返回</el-button>
+                        <el-button style="margin-left:100px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible = true">修改数据</el-button>
+                        <el-button style="margin-left:10px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible1 = true">修改头像</el-button>
+                        <el-button style="margin-left:10px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="forLogout" >退出登录</el-button>
                         <el-popover
                                 placement="right"
                                 width="400"
@@ -258,12 +266,60 @@
 
                     </div>
             </template>
+<!--              个人剩余资金展示以及个人流水，位于个人中心页面-->
+                <div v-if="currentTable === 'table2'" style="display: flex; align-items: center;">
+                    <div>
+                        个人资金: {{ userFund }} 资金流水如下
+                    </div>
+                    <el-form :inline="true" style="margin-left: 100px;">
+                        <el-form-item label="分类查看">
+                            <el-select v-model="classificationFlow.name" placeholder="请选择类型" style="width: 200px;">
+                                <el-option label="交易对象" value="object"></el-option>
+                                <el-option label="交易时间" value="time"></el-option>
+                                <el-option label="交易类型" value="type"></el-option>
+                                <el-option label="交易金额" value="amount"></el-option>
+                                <el-option label="交易状态" value="status"></el-option>
+                                <el-option label="全部" value="all" divided></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="内容">
+                            <el-input v-model="classificationFlow.content"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="selectFlow">查询</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+                <template>
+                    <el-table
+                            v-if="currentTable === 'table2'"
+                            :data="PersonalFlow"
+                            style="  margin-top:10px;width: 100%">
+                        <el-table-column
+                                prop="object"
+                                label="交易对象"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="time"
+                                label="交易时间"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="交易类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="amount"
+                                label="交易金额">
+                        </el-table-column>
+                        <el-table-column
+                                prop="status"
+                                label="交易状态">
+                        </el-table-column>
 
-                <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible = true">修改数据</el-button>
-                <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible1 = true">修改头像</el-button>
-                <el-button style="margin-left:1000px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="forLogout" >退出登录</el-button>
-<!--           资金中心的页面-->
-
+                    </el-table>
+                </template>
 
 
 <!--                  修改数据的对话框-->
@@ -294,7 +350,18 @@
 
                 </el-dialog>
                 <!-- 修改头像的对话框 -->
-            <!--//邀请他人表格-->
+                <el-dialog
+                        title="修改头像"
+                        :visible.sync="dialogVisible1"
+                        width="30%"
+                        :before-close="handleClose1">
+                    <form id="avatarForm" enctype="multipart/form-data" ref="avatarForm">
+                        <input type="file" name="avatar" accept="image/*" required>
+                        <button  type="submit" @click="uploadAvatar">上传头像</button>
+                        <div id="resultMessage"></div>
+                    </form>
+                </el-dialog>
+                <!--//邀请他人表格-->
                 <template>
                     <el-dialog
                             title="邀请他人"
@@ -380,7 +447,14 @@
             data () {
             return {
                 value1: true,
-                currentTable: 'table1',
+                //用户个人资金
+                userFund:"",
+                currentTable: 'table2',
+                //流水的分类查询
+                classificationFlow:{
+                    name:"",
+                    content:""
+                },
                 // 搜索框表单
                 formInline: {
                     name: '',
@@ -392,7 +466,6 @@
                     location: '',
                     nickname: '',
                     PhoneNumber:'',
-
                 },
                 //修改群组信息
                  AdminChangeGroup: {
@@ -401,9 +474,9 @@
                      direction:'',
                      isvisiable:''
                 },
+                //申请个人群组
                 ApplyOwnGroup:{
                     groupname:'',
-
                 },
                 // 个人信息展示表格数据
                 tableData: [{
@@ -438,10 +511,17 @@
                 },],
                 JoinGroup: {
                     companyName: ''
-                },
+                },//邀请他人加入企业
                 inviteForm: {
                     name: '',
                 },
+                PersonalFlow:[{
+                    object:"",
+                    time:'',
+                    amount:'',
+                    status:'',
+                    type:""
+                },],
                 circleUrl: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
                 userId: '游客',
                 sizeList: ["large", "medium", "small"],
@@ -587,6 +667,7 @@
 
                 const formData = new FormData($('#avatarForm')[0]);
                 formData.append('username', this.userId); // 添加用户名字段
+                formData.append('userId', this.userId); // 假设我们需要同时发送用户ID
 
                 try {
                     const response = await axios.post('http://localhost:8080/jwt_test/user/FileUpload', formData, {
@@ -826,9 +907,6 @@
                     }
                 });
             },
-            var:intervalId = setInterval(function() {
-                pollDatabaseForUpdates();
-            }, 5000),
             submitInvite() {
                 var _this=this;
                 $.ajax({
@@ -933,48 +1011,110 @@
                     },
                 })
             },
+            getPersonalFlow() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/ShowPersonalFlow',
+                    method: 'POST',
+                    data: {username: this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        const tableData1 = response.map(group => ({
+                            object:group.transaction_object,
+                            time:group.transaction_time,
+                            amount:group.amount,
+                            status:group.transaction_status,
+                            type:group.type
 
+                        }));
+                        this.PersonalFlow= tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },//流水的分类查询
+            // classificationFlow:{
+            //     name:"",
+            //     content:""
+            // },
+            selectFlow(){
 
-            checkToken(){// 当页面加载完成后
-                // 在Vue实例创建时尝试从localStorage获取token
-                this.token = localStorage.getItem('jwtToken');
-                if (this.token) {
-                    try {
-                        // 分割JWT字符串为三部分: header.payload.signature
-                        const [header, payload, signature] = this.token.split('.');
-                        // Base64解码负载部分
-                        const decodedPayload = window.atob(payload);
-                        // 解析负载部分的JSON字符串
-                        const tokenData = JSON.parse(decodedPayload);
-                        // 从token数据中提取username并赋值给userId
-                        if (tokenData && tokenData.username) {
-                            console.log("用户名：", tokenData.username);
-                            this.userId = tokenData.username;
-                            this.Authority=tokenData.authority;
-                            console.log("我的"+this.Authority);
-                            console.log("权限：",tokenData.authority);
-                            if(this.Authority===0){
-                                this.userId="游客"
-                            }
-                        }  if (tokenData && tokenData.avatar_url) {
-                            console.log("图片路径：", tokenData.avatar_url);
-                            const urlPrefix = 'images/'; // 假设图片位于Web应用的/images目录下
-                            // 从本地路径中提取图片文件名（包括扩展名）
-                            const fileName = tokenData.avatar_url.split('\\').pop(); // 在Windows中路径分隔符是反斜杠\
-                            // 拼接URL前缀和文件名得到完整的图片URL
-                            const imageUrl = urlPrefix + fileName;
+                if ((this.classificationFlow.name === null || classificationFlow.name === undefined || classificationFlow.name === "") &&
+                    (this.classificationFlow.content === null || this.classificationFlow.content === undefined || this.classificationFlow.content === "")){
 
-                            // 将得到的URL赋值给this.circleUrl
-                            this.circleUrl = imageUrl;
-                        }
-                    } catch (error) {
-                        console.error('解析token时出错:', error);
-                    }
-                } else {
-                    console.log('localStorage中没有找到token');
+                    this.showgroups();
+                    return;
                 }
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/GroupQueryService',
+                    method: 'POST',
+                    data: {
+                        groupName:this.formInline.name,
+                        direction:this.formInline.direction
+                    },
+                    dataType: 'json',
+                    success:  (response) => {
+                        const tableData1 = response.map(group => ({
+                            groupname: group.groupname,
+                            number: group.number,
+                            scale: group.scale,
+                            direction: group.direction,
+                        }));
+                        this.tableData1 = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
 
-            }
+                })
+
+
+            },
+
+            checkToken() {// 当页面加载完成后
+                        // 在Vue实例创建时尝试从localStorage获取token
+                        this.token = localStorage.getItem('jwtToken');
+                        if (this.token) {
+                            try {
+                                // 分割JWT字符串为三部分: header.payload.signature
+                                const [header, payload, signature] = this.token.split('.');
+                                // Base64解码负载部分
+                                const decodedPayload = window.atob(payload);
+                                // 解析负载部分的JSON字符串
+                                const tokenData = JSON.parse(decodedPayload);
+                                // 从token数据中提取username并赋值给userId
+                                if (tokenData && tokenData.username) {
+                                    console.log("用户名：", tokenData.username);
+                                    this.userId = tokenData.username;
+                                    this.Authority = tokenData.authority;
+                                    this.userFund = tokenData.PersonalFunds;
+                                    if (this.Authority === 0) {
+                                        this.userId = "游客"
+                                    }
+                                }
+                                if (tokenData && tokenData.avatar_url) {
+                                    console.log("图片路径：", tokenData.avatar_url);
+                                    const urlPrefix = 'images/'; // 假设图片位于Web应用的/images目录下
+                                    // 从本地路径中提取图片文件名（包括扩展名）
+                                    const fileName = tokenData.avatar_url.split('\\').pop(); // 在Windows中路径分隔符是反斜杠\
+                                    // 拼接URL前缀和文件名得到完整的图片URL
+                                    const imageUrl = urlPrefix + fileName;
+                                    console.log("imageUrl")
+
+                                    // 将得到的URL赋值给this.circleUrl
+                                    this.circleUrl = imageUrl;
+                                    console.log(this.circleUrl)
+                                }
+                            } catch (error) {
+                                console.error('解析token时出错:', error);
+                            }
+                        } else {
+                            console.log('localStorage中没有找到token');
+                        }
+
+                    }
         }
         })
 

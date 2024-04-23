@@ -27,4 +27,6 @@ public interface UserDAO {
 
     //管理员同意添加群组后，修改群员所在群组及权限
     int AgreeCreateGroupMessage(String username,String groupid);
+
+    int InsertAvatar(String filepath,String username);
 }

@@ -46,42 +46,54 @@ public class UserServlet  extends BaseServlet {
     public void FileUpload(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(req);
         if (!isMultipart) {
-            // 处理非多部分请求或返回错误响应
+            resp.getWriter().println("{ \"success\": false, \"message\": \"Request is not multipart.\" }");
             return;
         }
 
         DiskFileItemFactory factory = new DiskFileItemFactory();
-        factory.setSizeThreshold(MAX_FILE_SIZE); // 设置临时文件阈值
+        factory.setSizeThreshold(MAX_FILE_SIZE);
         factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
         ServletFileUpload uploadHandler = new ServletFileUpload(factory);
-        uploadHandler.setSizeMax(MAX_FILE_SIZE); // 设置最大允许上传文件大小
+        uploadHandler.setSizeMax(MAX_FILE_SIZE);
+
         try {
             List<FileItem> items = uploadHandler.parseRequest(req);
+            String username = null;
+            String userId = null; // 用于存储用户ID
+            FileItem fileItem = null;
+
             for (FileItem item : items) {
-                if (!item.isFormField() && item.getFieldName().equals("avatar")) { // 检查是否为期望的文件字段
-                    InputStream inputStream = item.getInputStream();
-                    String fileName = item.getName();
-                    String contentType = item.getContentType();
-                    long contentLength = item.getSize();
-
-                    // 保存文件到服务器
-                    File uploadedFile = new File(UPLOAD_DIR, fileName);
-                    Files.copy(inputStream, uploadedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                    // 将文件信息（如路径或ID）保存到数据库
-                    saveFileToDatabase(uploadedFile.getAbsolutePath(), contentType, contentLength, req.getParameter("userId")); // 假设从请求中获取用户ID
-                    break;
-                } else if (item.isFormField() && item.getFieldName().equals("username")) { // 处理非文件字段（如username）
-                    String username = item.getString(); // 获取username字段的值
-                    System.out.println(username);
+                if (item.isFormField()) {
+                    if ("username".equals(item.getFieldName())) {
+                        username = item.getString();
+                    } else if ("userId".equals(item.getFieldName())) { // 假设前端发送了用户ID
+                        userId = item.getString();
+                    }
+                } else if ("avatar".equals(item.getFieldName())) {
+                    fileItem = item; // 保存FileItem对象以便后续处理
                 }
             }
 
-            resp.getWriter().println("{ \"success\": true }");
+            if (fileItem != null && username != null && userId != null) {
+                InputStream inputStream = fileItem.getInputStream();
+                String fileName = fileItem.getName();
+                String contentType = fileItem.getContentType();
+                long contentLength = fileItem.getSize();
+
+                File uploadedFile = new File(UPLOAD_DIR, fileName);
+                Files.copy(inputStream, uploadedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                saveFileToDatabase(uploadedFile.getAbsolutePath(), contentType, contentLength, userId);
+                resp.getWriter().println("{ \"success\": true }");
+            } else {
+                resp.getWriter().println("{ \"success\": false, \"message\": \"Missing fields or file.\" }");
+            }
+
         } catch (FileUploadException | SQLException e) {
             resp.getWriter().println("{ \"success\": false, \"message\": \"" + e.getMessage() + "\" }");
             e.printStackTrace();
         }
+
     }
 
     public void ForChangeData(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -122,8 +134,10 @@ public class UserServlet  extends BaseServlet {
                     .setSubject(username) // 设置JWT的主题，可以存放用户名
                     .claim("avatar_url", matchedUser.getAvatar_url())
                     .claim("authority", matchedUser.getAuthority())
+                    .claim("PersonalFunds",matchedUser.getPersonalfunds())
                     .claim("username", username)
                     .claim("password", password)
+
                     .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
 
                     .compact();
@@ -269,6 +283,7 @@ public class UserServlet  extends BaseServlet {
     private void saveFileToDatabase(String filePath, String contentType, long contentLength, String userId) throws SQLException {
         Connection conn = null;
         PreparedStatement stmt = null;
+        System.out.println("filePath:" + filePath+"userId"+userId);
         try {
             try {
                 Class.forName("com.mysql.cj.jdbc.Driver"); // 替换为实际的数据库驱动类名

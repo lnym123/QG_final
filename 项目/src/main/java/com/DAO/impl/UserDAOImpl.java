@@ -108,5 +108,17 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public int InsertAvatar(String filepath, String username) {
+        try {
+            String sql = "UPDATE tb_user SET avatar_url=? WHERE username=?";
+
+            return executeUpdate(sql, filepath, username);
+        } catch (Exception e) {
+
+            throw new RuntimeException(e);
+        }
+    }
 }
 
