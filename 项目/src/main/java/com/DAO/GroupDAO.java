@@ -20,4 +20,6 @@ public interface GroupDAO {
      int OperateBanGroup(String id, String action);
 
      int AgreeCreateGroup(String id);
+
+     Group SelectGroupPublicFund(String id);
 }

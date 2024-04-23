@@ -122,13 +122,11 @@ public class UserServlet  extends BaseServlet {
         String password = req.getParameter("password");
         List<User> users = userDao.selectAll(username, password);
         User matchedUser = users.stream().findFirst().orElse(null);
-        System.out.println("到达1");
         resp.setContentType("application/json;charset=utf-8");
         PrintWriter out = resp.getWriter();
         // 验证用户名和密码（这里仅作简单示意，实际应使用更安全的方法）
         if (!matchedUser.getUsername().equals("游客")) { // 自定义的验证方法
             // 验证通过，生成JWT
-            System.out.println("正常账号登录");
             String token = Jwts.builder()
                     .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
                     .setSubject(username) // 设置JWT的主题，可以存放用户名
@@ -145,7 +143,6 @@ public class UserServlet  extends BaseServlet {
 
             out.println("{\"token\":\"" + token + "\"}");
         } else if(Objects.equals(matchedUser.getUsername(), "游客")) {
-            System.out.println("1");
             String token = Jwts.builder()
                     .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
                     .claim("username", "null")
@@ -153,7 +150,6 @@ public class UserServlet  extends BaseServlet {
                     .claim("authority", matchedUser.getAuthority())
                     .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
                     .compact();
-            System.out.println(token);
 
             out.println("{\"token\":\"" + token + "\"}");
 
@@ -193,7 +189,6 @@ public class UserServlet  extends BaseServlet {
             response.put("number", user.getPhoneNumber());
             response.put("address", user.getLocation());
 
-            System.out.println(response);
             String json = mapper.writeValueAsString(response);
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
@@ -283,14 +278,12 @@ public class UserServlet  extends BaseServlet {
     private void saveFileToDatabase(String filePath, String contentType, long contentLength, String userId) throws SQLException {
         Connection conn = null;
         PreparedStatement stmt = null;
-        System.out.println("filePath:" + filePath+"userId"+userId);
         try {
             try {
                 Class.forName("com.mysql.cj.jdbc.Driver"); // 替换为实际的数据库驱动类名
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
-            System.out.println(filePath);
             conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/db1", "root", "1234"); // 替换为实际的数据库连接信息
             String sql = "UPDATE tb_user SET avatar_url = ? WHERE username = ?";
             stmt = conn.prepareStatement(sql);

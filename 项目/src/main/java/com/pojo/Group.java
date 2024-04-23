@@ -6,15 +6,26 @@ public class Group {
     private int number;
     private String scale;
     private String direction;
+    private int publicfunds;
 
     @Override
     public String toString() {
         return "Group{" +
-                "groupname='" + groupname + '\'' +
-                ", number='" + number + '\'' +
+                "id=" + id +
+                ", groupname='" + groupname + '\'' +
+                ", number=" + number +
                 ", scale='" + scale + '\'' +
                 ", direction='" + direction + '\'' +
+                ", publicfunds=" + publicfunds +
                 '}';
+    }
+
+    public int getPublicfunds() {
+        return publicfunds;
+    }
+
+    public void setPublicfunds(int publicfunds) {
+        this.publicfunds = publicfunds;
     }
 
     public Group() {

@@ -76,7 +76,7 @@
                             <i class="el-icon-user"></i>
                             <span slot="title">个人中心</span>
                         </el-menu-item>
-                        <el-menu-item index="3" @click="ShowPersonalGroup">
+                        <el-menu-item index="3" @click="ShowPersonalGroup(),GetBalanceOfEachMemberInGroup(), GetGroupPublicFund()">
                             <i class="el-icon-s-cooperation"></i>
                             <span slot="title">我的群组</span>
                         </el-menu-item>
@@ -124,8 +124,6 @@
                                         <el-table-column  prop="senter" label="发送者"></el-table-column>
                                         <el-table-column  prop="message" label="消息内容"></el-table-column>
 
-
-                                        <!-- 添加一个自定义列，包含按钮及行数显示 -->
                                         <el-table-column  width="200" label="操作">
                                             <template slot-scope="{ row, $index }">
                                                 <div style="display: flex;">
@@ -257,7 +255,7 @@
                         </el-table>
 
                         <div style="display: flex; justify-content: space-between; margin-right: 500px; margin-bottom: 10px;">
-                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="warning">注销群组</el-button>
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="warning" @click="logoutGroup">注销群组</el-button>
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible4=true" >设置群组信息</el-button>
                             <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible3=true">邀请他人进入群组</el-button>
                             <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="dialogVisible5 = true">申请我的群组</el-button>
@@ -440,12 +438,13 @@
                                 label="余额"
                                 width="180">
                         </el-table-column>
+
                     </el-table>
                 </template>
     <!--//  群组管理员管理群组内资金-->
-                <div  v-if="currentTable ==='table3'">群组内各群友及其群内资金</div>
+                <div  v-if="currentTable ==='table3'&&Authority>1">群组内各群员及其群内资金   群内公共资金: {{ GroupPublicFunds }} </div>
                 <template >
-                    <el-table  v-if="currentTable ==='table3'"
+                    <el-table  v-if="currentTable ==='table3'&&this.Authority>1"
                                :data="BalanceOfEachMemberInGroup"
                                style="margin-top: 20px">
                         <el-table-column
@@ -455,10 +454,56 @@
                         </el-table-column>
                         <el-table-column
                                 prop="number"
-                                label="余额"
+                                label="群内余额"
                                 width="180">
                         </el-table-column>
+                        <el-table-column  label="操作">
+                            <template slot-scope="{ row, $index }">
+                                <div style="display: flex;">
+                                    <!-- 第一个按钮 -->
+                                    <el-button  type="success" icon="el-icon-check" @click="openAllocateDialog(row)">
+                                        分配资金
+                                    </el-button>
+                                    <el-button   type="success"  icon="el-icon-check" @click="openRecoveryDialog(row)">
+                                        回收资金</el-button>
+                                </div>
+                            </template>
+                        </el-table-column>
                     </el-table>
+                </template>
+                <template>
+                    <el-dialog
+                            title="分配资金"
+                            :visible.sync="dialogVisible6"
+                            width="30%"
+                            :before-close="handleClose6">
+                        <el-form :model="AllocatefundsNumber" label-width="80px">
+                            <el-form-item label="分配金额">
+                                <el-input v-model="AllocatefundsNumber.number" placeholder="请输入分配的金额"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <span slot="footer" class="dialog-footer">
+      <el-button @click="dialogVisible6 = false">取消</el-button>
+      <el-button type="primary" @click="Allocatefunds">分配</el-button>
+    </span>
+                    </el-dialog>
+                </template>
+                <template>
+                    <el-dialog
+                            title="分配资金"
+                            :visible.sync="dialogVisible7"
+                            width="30%"
+                            :before-close="handleClose7">
+                        <el-form :model="AllocatefundsNumber" label-width="80px">
+                            <el-form-item label="回收金额">
+                                <el-input v-model="AllocatefundsNumber.number" placeholder="请输入回收的金额"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <span slot="footer" class="dialog-footer">
+      <el-button @click="dialogVisible7 = false">取消</el-button>
+      <el-button type="primary" @click="Recoveryfunds">回收</el-button>
+    </span>
+                    </el-dialog>
                 </template>
 
 
@@ -487,6 +532,8 @@
                 value1: true,
                 //用户个人资金
                 userFund:"",
+                //各群的公共资金
+                GroupPublicFunds:"",
                 currentTable: 'table1',
                 //流水的分类查询
                 classificationFlow:{
@@ -498,9 +545,11 @@
                     groupname:"",
                     number:"",
                 }],
+                //各个群员组内资金
                 BalanceOfEachMemberInGroup:[{
                     username:"",
                     number:"",
+                    authority:""
                 }],
                 // 搜索框表单
                 formInline: {
@@ -524,6 +573,11 @@
                 //申请个人群组
                 ApplyOwnGroup:{
                     groupname:'',
+                },
+                //分配资金
+                currentRowData: null,
+                AllocatefundsNumber:{
+                  number:"",
                 },
                 // 个人信息展示表格数据
                 tableData: [{
@@ -586,6 +640,10 @@
                 dialogVisible4:false,
                 //申请个人群组的对话框
                 dialogVisible5:false,
+                //分配资金
+                dialogVisible6:false,
+                //回收资金
+                dialogVisible7:false,
             }
         },methods: {
             handleOpen(key, keyPath) {
@@ -616,6 +674,12 @@
             },
             handleClose5(done){
                 this.dialogVisible5 = false;
+            },
+            handleClose6(done){
+                this.dialogVisible6 = false;
+            },
+            handleClose7(done){
+                this.dialogVisible7 = false;
             },
             showPersonimf() {
                 if(this.userId==="游客"){
@@ -1138,6 +1202,130 @@
                             number: item.number
                         }));
                         this.BalanceOfEachEnterprise = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            //管理员查看组员余额
+            GetBalanceOfEachMemberInGroup(){
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/GetBalanceOfEachMemberInGroup',
+                    method: 'POST',
+                    data:{
+                        TheAdminName:_this.userId,
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                        const tableData1 = response.map(item => ({
+                            username:item.username,
+                            number:item.groupfunds,
+                            authority:item.authority
+                        }));
+                        this.BalanceOfEachMemberInGroup = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            GetGroupPublicFund(){
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/GetGroupPublicFund',
+                    method: 'POST',
+                    data:{
+                        TheAdminName:_this.userId,
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+
+                        this.GroupPublicFunds =response.publicfunds;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            // AllocatefundsNumber:{
+            //     number:"",
+            // },
+            openAllocateDialog(row) {
+                this.currentRowData = row; // 将当前行数据保存在组件的一个变量中
+                this.dialogVisible6 = true; // 打开对话框
+            },
+            openRecoveryDialog(row) {
+                this.currentRowData = row; // 将当前行数据保存在组件的一个变量中
+                this.dialogVisible7 = true; // 打开对话框
+            },
+            Allocatefunds(rowIndex){
+                const username = this.currentRowData.username;
+                const amount= this.currentRowData.number;
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds',
+                        method: 'POST',
+                        data:{
+                            Theuser:username,
+                            Useramount:Number(amount) + Number(_this.AllocatefundsNumber.number),
+                            pubilicAmount:_this.GroupPublicFunds-Number(_this.AllocatefundsNumber.number),
+                        },
+                    dataType:'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.dialogVisible6=false;
+                        _this.GetBalanceOfEachMemberInGroup(),
+                            _this.GetGroupPublicFund()
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            Recoveryfunds(rowIndex){
+                const username = this.currentRowData.username;
+                const amount= this.currentRowData.number;
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds',
+                    method: 'POST',
+                    data:{
+                        Theuser:username,
+                        Useramount:Number(amount) - Number(_this.AllocatefundsNumber.number),
+                        pubilicAmount:_this.GroupPublicFunds+Number(_this.AllocatefundsNumber.number),
+                    },
+                    dataType:'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.dialogVisible7=false;
+                        _this.GetBalanceOfEachMemberInGroup(),
+                            _this.GetGroupPublicFund()
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            //注销群组
+            logoutGroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/LogOutGroup',
+                    method: 'POST',
+                    data:{
+                      TheAdmin:_this.userId,
+                        PublicFunds:_this.GroupPublicFunds
+                    },
+                    dataType:'text',
+                    success: (response) => {
+
                     },
                     error: (xhr, status, error) => {
                         console.error('请求失败:', error);

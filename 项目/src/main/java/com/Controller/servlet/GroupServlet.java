@@ -90,4 +90,14 @@ public class GroupServlet extends BaseServlet {
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已封禁");
     }
+    public void LogOutGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String theAdmin = req.getParameter("TheAdmin");
+        int PublicFunds = Integer.parseInt(req.getParameter("PublicFunds"));
+        User user = userDao.selectByname(theAdmin);
+        String groupname =user.getGroupid();
+        userDao.ForLogOutGroup(groupname,theAdmin,PublicFunds);
+
+
+
+    }
 }

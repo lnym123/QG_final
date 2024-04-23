@@ -29,4 +29,10 @@ public interface UserDAO {
     int AgreeCreateGroupMessage(String username,String groupid);
 
     int InsertAvatar(String filepath,String username);
+
+    List<User> selectGroupMumber(String groupid);
+
+    int ForLogOutGroup(String groupid,String username,int amount);
+
+
 }

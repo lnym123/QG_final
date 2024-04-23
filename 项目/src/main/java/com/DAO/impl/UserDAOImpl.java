@@ -113,8 +113,34 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     public int InsertAvatar(String filepath, String username) {
         try {
             String sql = "UPDATE tb_user SET avatar_url=? WHERE username=?";
-
             return executeUpdate(sql, filepath, username);
+        } catch (Exception e) {
+
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<User> selectGroupMumber(String groupid) {
+        try {
+            String sql = "SELECT username,Groupfunds,authority FROM tb_user WHERE groupid=?";
+            return executeQuery(User.class,sql,groupid);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int ForLogOutGroup(String groupid,String username,int amount) {
+        try {
+            String sql1 = "UPDATE tb_user SET Personalfunds=Personalfunds+Groupfunds WHERE groupid=?";
+            String sql2 = "UPDATE tb_user SET Personalfunds=Personalfunds+? WHERE username=?";
+            String sql5 = "UPDATE tb_user SET Groupfunds=0 WHERE groupid=?";
+            String sql3 = "UPDATE tb_user SET groupid=NULL WHERE groupid=?";
+            String sql4 = "UPDATE tb_user SET authority=1 WHERE username=?";
+            String sql6 ="DELETE FROM tb_group WHERE groupname=?";
+            return executeUpdate(sql2, amount,username)+executeUpdate(sql1, groupid)+executeUpdate(sql5,groupid)+
+                    executeUpdate(sql3, groupid)+executeUpdate(sql4, username)+executeUpdate(sql6,groupid);
         } catch (Exception e) {
 
             throw new RuntimeException(e);

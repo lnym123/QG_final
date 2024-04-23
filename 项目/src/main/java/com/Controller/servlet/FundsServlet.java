@@ -2,13 +2,16 @@ package com.Controller.servlet;
 
 import com.Controller.BaseServlet;
 import com.DAO.FundDAO;
+import com.DAO.GroupDAO;
 import com.DAO.UserDAO;
 import com.DAO.impl.FundDAOimpl;
+import com.DAO.impl.GroupDAOimpl;
 import com.DAO.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.pojo.Funds;
+import com.pojo.Group;
 import com.pojo.User;
 
 import javax.servlet.ServletException;
@@ -25,6 +28,7 @@ import java.util.Map;
 public class FundsServlet extends BaseServlet {
  FundDAO fundDAO=new FundDAOimpl();
  UserDAO userDAO=new UserDAOImpl();
+ GroupDAO groupDAO=new GroupDAOimpl();
     public void ShowPersonalFlow(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
         String username =request.getParameter("username");
         List<Funds> funds=fundDAO.SelectPersonalFunds(username);
@@ -37,7 +41,6 @@ public class FundsServlet extends BaseServlet {
         String name = request.getParameter("name");
         String content = request.getParameter("content");
         String username = request.getParameter("username");
-        System.out.println("username:"+username);
 
         List<Funds> funds= fundDAO.selectByCondition(username,name,content);
         String jsonString= JSON.toJSONString(funds);
@@ -49,9 +52,7 @@ public class FundsServlet extends BaseServlet {
         List<User> users = userDAO.selectAllUser();
         Map<String, Double> groupBalances = new HashMap<>();
         for (User user : users) {
-
             String groupName = user.getGroupid();
-
             // 跳过空群组ID
             if (groupName == null || groupName.isEmpty()) {
                 continue;
@@ -77,7 +78,36 @@ public class FundsServlet extends BaseServlet {
         resp.setContentType("text/json;charset=utf-8");
         resp.getWriter().write(jsonString);
         }
+        public void GetBalanceOfEachMemberInGroup(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+            String theAdminName = request.getParameter("TheAdminName");
+            User user =userDAO.selectByname(theAdminName);
+            String groupname =user.getGroupid();
+            List<User> users=userDAO.selectGroupMumber(groupname);
+            String jsonString= JSON.toJSONString(users);
+            resp.setContentType("text/json;charset=utf-8");
+            resp.getWriter().write(jsonString);
+
+        }
+        public void GetGroupPublicFund(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+        String theAdminName = request.getParameter("TheAdminName");
+        User user =userDAO.selectByname(theAdminName);
+        String groupname =user.getGroupid();
+        Group group=groupDAO.SelectGroupPublicFund(groupname);
+        String jsonString= JSON.toJSONString(group);
+            resp.setContentType("text/json;charset=utf-8");
+            resp.getWriter().write(jsonString);
+        }
+        public void Allocatefunds(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+            String theuser = request.getParameter("Theuser");
+            int Useramount = Integer.parseInt(request.getParameter("Useramount"));
+            int pubilicAmount = Integer.parseInt(request.getParameter("pubilicAmount"));
+            User user =userDAO.selectByname(theuser);
+            String groupname =user.getGroupid();
+            fundDAO.Allocatefunds(theuser,Useramount,pubilicAmount,groupname);
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write("分配完毕");
 
 
-
+        }
+    
 }

@@ -134,5 +134,15 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
         }
     }
 
+    @Override
+    public Group SelectGroupPublicFund(String id) {
+        try {
+            String sql = "SELECT publicfunds FROM tb_group WHERE groupname=?";
+            return executeQueryBean(Group.class, sql,id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
 

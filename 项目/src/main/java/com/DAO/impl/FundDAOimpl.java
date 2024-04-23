@@ -27,4 +27,15 @@ public class FundDAOimpl extends BaseDAO implements FundDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public int Allocatefunds(String id, int amount1,int amount2,String groupid) {
+        try {
+            String sql1 = "UPDATE tb_user SET Groupfunds=? WHERE username = ?";
+            String sql2 = "UPDATE tb_group SET publicfunds=? WHERE groupname = ?";
+            return executeUpdate(sql1,amount1,id)+executeUpdate(sql2,amount2,groupid);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
