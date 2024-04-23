@@ -82,7 +82,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public List<User> selectAllUser() {
         try {
-            String sql = "SELECT username,password FROM tb_user";
+            String sql = "SELECT username,groupid,Groupfunds FROM tb_user";
             return executeQuery(User.class,sql);
         } catch (Exception e) {
             throw new RuntimeException(e);

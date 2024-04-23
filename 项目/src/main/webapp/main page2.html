@@ -80,7 +80,7 @@
                             <i class="el-icon-s-cooperation"></i>
                             <span slot="title">我的群组</span>
                         </el-menu-item>
-                        <el-menu-item index="4">
+                        <el-menu-item index="4" @click="GetGroupBalance()">
                             <i class="el-icon-s-data"></i>
                             <span slot="title">资金中心</span>
                         </el-menu-item>
@@ -320,8 +320,6 @@
 
                     </el-table>
                 </template>
-
-
 <!--                  修改数据的对话框-->
                 <el-dialog
                         title="修改数据"
@@ -423,6 +421,46 @@
                         </el-form-item>
                     </el-form>
                 </el-dialog>
+<!--//资金中心页-->
+                <div v-if="currentTable ==='table4'">
+                    个人资金: {{ userFund }}   各群组余额如下
+                </div>
+<!--                //不同群组资金余额-->
+                <template >
+                    <el-table  v-if="currentTable ==='table4'"
+                            :data="BalanceOfEachEnterprise"
+                               style="margin-top: 20px">
+                        <el-table-column
+                                prop="groupname"
+                                label="名称"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="number"
+                                label="余额"
+                                width="180">
+                        </el-table-column>
+                    </el-table>
+                </template>
+    <!--//  群组管理员管理群组内资金-->
+                <div  v-if="currentTable ==='table3'">群组内各群友及其群内资金</div>
+                <template >
+                    <el-table  v-if="currentTable ==='table3'"
+                               :data="BalanceOfEachMemberInGroup"
+                               style="margin-top: 20px">
+                        <el-table-column
+                                prop="username"
+                                label="名称"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="number"
+                                label="余额"
+                                width="180">
+                        </el-table-column>
+                    </el-table>
+                </template>
+
 
 
             </el-main>
@@ -455,6 +493,15 @@
                     name:"",
                     content:""
                 },
+                //各个群组余额
+                BalanceOfEachEnterprise:[{
+                    groupname:"",
+                    number:"",
+                }],
+                BalanceOfEachMemberInGroup:[{
+                    username:"",
+                    number:"",
+                }],
                 // 搜索框表单
                 formInline: {
                     name: '',
@@ -1034,10 +1081,7 @@
                     },
                 })
             },//流水的分类查询
-            // classificationFlow:{
-            //     name:"",
-            //     content:""
-            // },
+
             selectFlow(){
                 if(this.classificationFlow.name==="all"){
                     this.getPersonalFlow();
@@ -1078,12 +1122,29 @@
                         console.error('请求失败:', error);
                         // 处理请求失败逻辑
                     }
-
                 })
-
-
             },
-
+           //各群组余额查询
+            GetGroupBalance() {
+                this.currentTable = "table4";
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/GetGroupBalance',
+                    method: 'POST',
+                    dataType: 'json',
+                    success: (response) => {
+                        const tableData1 = response.map(item => ({
+                            groupname: item.groupname,
+                            number: item.number
+                        }));
+                        this.BalanceOfEachEnterprise = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
             checkToken() {// 当页面加载完成后
                         // 在Vue实例创建时尝试从localStorage获取token
                         this.token = localStorage.getItem('jwtToken');

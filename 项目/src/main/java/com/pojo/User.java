@@ -77,9 +77,17 @@ public class User {
                 ", location='" + location + '\'' +
                 ", nickname='" + nickname + '\'' +
                 ", PhoneNumber='" + PhoneNumber + '\'' +
+                ", authority=" + authority +
                 ", groupid='" + groupid + '\'' +
+                ", avatar_url='" + avatar_url + '\'' +
+                ", Personalfunds=" + Personalfunds +
+                ", Groupfunds=" + Groupfunds +
+                ", Locked='" + Locked + '\'' +
                 '}';
     }
+
+
+
     public String getAvatar_url() {
         return avatar_url;
     }
