@@ -8,7 +8,8 @@ public class Funds {
     String type;
     String amount;
     String transaction_status;
-
+    String mode;
+    String groupname;
 
     @Override
     public String toString() {
@@ -19,6 +20,8 @@ public class Funds {
                 ", type='" + type + '\'' +
                 ", amount='" + amount + '\'' +
                 ", transaction_status='" + transaction_status + '\'' +
+                ", mode='" + mode + '\'' +
+                ", groupname='" + groupname + '\'' +
                 '}';
     }
 
@@ -46,11 +49,11 @@ public class Funds {
         this.transaction_time = transaction_time;
     }
 
-    public String gettype() {
+    public String getType() {
         return type;
     }
 
-    public void settype(String type) {
+    public void setType(String type) {
         this.type = type;
     }
 
@@ -68,5 +71,21 @@ public class Funds {
 
     public void setTransaction_status(String transaction_status) {
         this.transaction_status = transaction_status;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
+    public String getGroupname() {
+        return groupname;
+    }
+
+    public void setGroupname(String groupname) {
+        this.groupname = groupname;
     }
 }

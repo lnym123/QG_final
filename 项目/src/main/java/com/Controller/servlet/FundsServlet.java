@@ -106,8 +106,15 @@ public class FundsServlet extends BaseServlet {
             fundDAO.Allocatefunds(theuser,Useramount,pubilicAmount,groupname);
             resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write("分配完毕");
-
-
+        }
+        public void ShowGroupFlow(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+            String username = request.getParameter("username");
+            User user =userDAO.selectByname(username);
+            String GroupName =user.getGroupid();
+             List<Funds> funds=fundDAO.SelectGroupFunds(GroupName);
+            String jsonString= JSON.toJSONString(funds);
+            resp.setContentType("text/json;charset=utf-8");
+            resp.getWriter().write(jsonString);
         }
     
 }

@@ -16,6 +16,8 @@
             <artifactId>Java-WebSocket</artifactId>
             <version>1.5.3</version>
         </dependency>
+
+
     <dependency>
         <groupId>io.jsonwebtoken</groupId>
         <artifactId>jjwt</artifactId>

@@ -80,7 +80,7 @@
                             <i class="el-icon-s-cooperation"></i>
                             <span slot="title">我的群组</span>
                         </el-menu-item>
-                        <el-menu-item index="4" @click="GetGroupBalance()">
+                        <el-menu-item index="4" @click="GetGroupBalance(),GetGroupFlow()">
                             <i class="el-icon-s-data"></i>
                             <span slot="title">资金中心</span>
                         </el-menu-item>
@@ -274,6 +274,7 @@
                             <el-select v-model="classificationFlow.name" placeholder="请选择类型" style="width: 200px;">
                                 <el-option label="交易对象" value="transaction_object"></el-option>
                                 <el-option label="交易时间" value="transaction_time"></el-option>
+                                <el-option label="交易方式" value="mode"></el-option>
                                 <el-option label="交易类型" value="type"></el-option>
                                 <el-option label="交易金额" value="amount"></el-option>
                                 <el-option label="交易状态" value="transaction_status"></el-option>
@@ -299,6 +300,11 @@
                                 width="180">
                         </el-table-column>
                         <el-table-column
+                                prop="mode"
+                                label="交易方式"
+                                width="100">
+                        </el-table-column>
+                        <el-table-column
                                 prop="time"
                                 label="交易时间"
                                 width="180">
@@ -318,6 +324,7 @@
 
                     </el-table>
                 </template>
+
 <!--                  修改数据的对话框-->
                 <el-dialog
                         title="修改数据"
@@ -420,10 +427,59 @@
                     </el-form>
                 </el-dialog>
 <!--//资金中心页-->
-                <div v-if="currentTable ==='table4'">
-                    个人资金: {{ userFund }}   各群组余额如下
+                <div v-if="currentTable === 'table4'" style="display: flex; align-items: center;">
+                    <div style="margin-right: 20px;"> <!-- 添加了一些右边距 -->
+                        个人资金: {{ userFund }}
+                    </div>
+                    <div v-if="Authority > 1">
+                        群内资金明细如下
+                    </div>
+                    <a   href="Payment simulation.html" target="_self">
+                        开启支付
+                    </a>
                 </div>
-<!--                //不同群组资金余额-->
+                <!--                //显示群组资金明细-->
+                <template>
+                    <el-table
+                            v-if="currentTable === 'table4'&&Authority > 1"
+                            :data="GroupFlow"
+                            style="  margin-top:10px;width: 100%">
+                        <el-table-column
+                                prop="username"
+                                label="交易用户"
+                                width="100">
+                        </el-table-column>
+                        <el-table-column
+                                prop="object"
+                                label="交易对象"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="time"
+                                label="交易时间"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="交易类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="amount"
+                                label="交易金额">
+                        </el-table-column>
+                        <el-table-column
+                                prop="status"
+                                label="交易状态">
+                        </el-table-column>
+
+                    </el-table>
+                </template>
+
+
+      <div v-if="currentTable ==='table4'" STYLE="margin-top:20PX">
+                各群组余额如下
+            </div>
+                <!--                //不同群组资金余额-->
                 <template >
                     <el-table  v-if="currentTable ==='table4'"
                             :data="BalanceOfEachEnterprise"
@@ -529,6 +585,7 @@
 
             data () {
             return {
+
                 value1: true,
                 //用户个人资金
                 userFund:"",
@@ -540,6 +597,7 @@
                     name:"",
                     content:""
                 },
+
                 //各个群组余额
                 BalanceOfEachEnterprise:[{
                     groupname:"",
@@ -616,11 +674,22 @@
                 inviteForm: {
                     name: '',
                 },
+                //个人流水
                 PersonalFlow:[{
                     object:"",
+                    mode:"",
                     time:'',
                     amount:'',
                     status:'',
+                    type:""
+                },],
+                //群组流水
+                GroupFlow:[{
+                    username:"",
+                    object:"",
+                    time:'',
+                    amount:'',
+                    status:"",
                     type:""
                 },],
                 circleUrl: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
@@ -644,17 +713,12 @@
                 dialogVisible6:false,
                 //回收资金
                 dialogVisible7:false,
+                //发起支付的表单
+                dialogVisible8:false,
             }
         },methods: {
             handleOpen(key, keyPath) {
                 console.log(key, keyPath);
-            },  open1() {
-                const h = this.$createElement;
-
-                this.$notify({
-                    title: '标题名称',
-                    message: h('i', { style: 'color: teal'}, '这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案这是提示文案')
-                });
             },
             handleCloseForChange(key, keyPath) {
                    this.dialogVisible=false;
@@ -681,6 +745,7 @@
             handleClose7(done){
                 this.dialogVisible7 = false;
             },
+            //校验
             showPersonimf() {
                 if(this.userId==="游客"){
                     alert("请先点击头像登录");
@@ -1131,6 +1196,7 @@
                     success:  (response) => {
                         const tableData1 = response.map(group => ({
                             object:group.transaction_object,
+                            mode:group.mode,
                             time:group.transaction_time,
                             amount:group.amount,
                             status:group.transaction_status,
@@ -1175,6 +1241,7 @@
                         const tableData1 = response.map(group => ({
                             object:group.transaction_object,
                             time:group.transaction_time,
+                            mode:group.mode,
                             amount:group.amount,
                             status:group.transaction_status,
                             type:group.type
@@ -1331,6 +1398,30 @@
                         console.error('请求失败:', error);
                         // 处理请求失败逻辑
                     }
+                });
+            },
+            //得到群组流水
+            GetGroupFlow() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/ShowGroupFlow',
+                    method: 'POST',
+                    data: {username: this.userId},
+                    dataType: 'json',
+                    success: (response) => {
+                        const tableData1 = response.map(group => ({
+                            object: group.transaction_object,
+                            username: group.username,
+                            time: group.transaction_time,
+                            amount: group.amount,
+                            status: group.transaction_status,
+                            type: group.type
+                        }));
+                        this.GroupFlow = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
                 });
             },
             checkToken() {// 当页面加载完成后
