@@ -1,12 +1,15 @@
 package com.Controller.servlet;
 
 import com.Controller.BaseServlet;
+import com.DAO.GroupDAO;
 import com.DAO.MessageDAO;
 import com.DAO.UserDAO;
+import com.DAO.impl.GroupDAOimpl;
 import com.DAO.impl.MessageDAOimpl;
 import com.DAO.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pojo.Group;
 import com.pojo.Message;
 import com.pojo.User;
 import io.jsonwebtoken.Jwts;
@@ -38,6 +41,7 @@ import java.util.*;
 public class UserServlet  extends BaseServlet {
     private final UserDAO userDao = new UserDAOImpl();
     MessageDAO messageDAO= new MessageDAOimpl();
+    GroupDAO groupDAO=new GroupDAOimpl();
     private static final String UPLOAD_DIR = "src/main/webapp/images"; // 替换为实际的上传目录路径
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
     private static final String SECRET_KEY = "MykEY"; // 替换为你的密钥
@@ -203,11 +207,21 @@ public class UserServlet  extends BaseServlet {
         String senter = req.getParameter("senter");
         String groupid = req.getParameter("groupid");
         String message1 = req.getParameter("sendmessage");
-        Message message = new Message(senter, message1, groupid,"application");
-        int i = userDao.sendapplication(message);
-        String jsonString= JSON.toJSONString("发送申请完毕");
+        List<Group> groups=groupDAO.selectAllForAdmin();
+        for (Group group : groups) {
+            if(Objects.equals(group.getGroupname(), groupid)){
+                Message message = new Message(senter, message1, groupid,"application");
+                int i = userDao.sendapplication(message);
+                String jsonString= JSON.toJSONString("发送申请完毕");
+                resp.setContentType("text/json;charset=utf-8");
+                resp.getWriter().write(jsonString);
+                return;
+            }
+        }
+        String jsonString= JSON.toJSONString("该群组不存在");
         resp.setContentType("text/json;charset=utf-8");
         resp.getWriter().write(jsonString);
+
 
     }
 
@@ -215,11 +229,20 @@ public class UserServlet  extends BaseServlet {
         String username = req.getParameter("username");
         User user = userDao.selectByname(username);
         String groupname =user.getGroupid();
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> response = new HashMap<>();
+        if(groupname==null){
+            response.put("success", false);
+            String json = mapper.writeValueAsString(response);
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write(json);
+            return;
+        }
         int i = userDao.ExitGroup(username);
         Message message = new Message(username,"退出群组", groupname,"Exit");
         int b = userDao.sendapplication(message);
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> response = new HashMap<>();
+
         if (i == 1) {
             response.put("success", true);
             String json = mapper.writeValueAsString(response);
@@ -270,6 +293,37 @@ public class UserServlet  extends BaseServlet {
         messageDAO.SendUserDenyMessage(thesenter,id,groupid);
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已拒绝");
+    }
+    //确认重置账号存在
+    public void ResetPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String username = req.getParameter("username");
+        String location = req.getParameter("location");
+        String phoneNumber = req.getParameter("PhoneNumber");
+        User user=userDao.CheckResetPasswordAccount(username,phoneNumber,location);
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> response = new HashMap<>();
+
+        if(user!=null){
+            response.put("success", true);
+            String json = mapper.writeValueAsString(response);
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write(json);
+        }else{
+            response.put("success",false);
+            String json = mapper.writeValueAsString(response);
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write(json);
+        }
+
+    }
+    public void  ForResetPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String username = req.getParameter("object");
+        String password = req.getParameter("password");
+        userDao.ResetPassword(username,password);
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已修改");
     }
 
 

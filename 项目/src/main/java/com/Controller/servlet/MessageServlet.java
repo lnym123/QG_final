@@ -49,7 +49,6 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
      public void DeleteMessage(HttpServletRequest req, HttpServletResponse resp) throws IOException {
          String senter = req.getParameter("TheSenter");
          String message = req.getParameter("TheMessage");
-         System.out.println("senter:"+senter+" message:"+message);
          int i=messageDAO.DeleteMessage(senter,message);
          resp.setCharacterEncoding("UTF-8");
          resp.getWriter().write("删除完毕");

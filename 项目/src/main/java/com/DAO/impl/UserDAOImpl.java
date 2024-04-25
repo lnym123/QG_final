@@ -146,5 +146,26 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public User CheckResetPasswordAccount(String username, String PhoneNumber, String location) {
+        try {
+            String sql = "SELECT * FROM tb_user WHERE username=? AND PhoneNumber=? AND location=?";
+            return executeQueryBean(User.class,sql,username,PhoneNumber,location);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int ResetPassword(String username, String password) {
+        try {
+            String sql = "UPDATE tb_user SET password=? WHERE username=?";
+            return executeUpdate(sql,password,username);
+        } catch (Exception e) {
+
+            throw new RuntimeException(e);
+        }
+    }
 }
 

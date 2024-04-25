@@ -336,13 +336,13 @@
                         <el-form-item label="昵称">
                             <el-input v-model="User.nickname"></el-input>
                         </el-form-item>
-                        <el-form-item label="地址">
+                        <el-form-item label="地址" prop="location" :rules="locationRules">
                             <el-input v-model="User.location"></el-input>
                         </el-form-item>
                         <el-form-item label="密码">
                             <el-input v-model="User.password"></el-input>
                         </el-form-item>
-                        <el-form-item label="手机号">
+                        <el-form-item label="手机号" prop="PhoneNumber" :rules="phoneRules">
                             <el-input v-model="User.PhoneNumber"></el-input>
                         </el-form-item>
                         <el-form-item>
@@ -534,7 +534,7 @@
                             width="30%"
                             :before-close="handleClose6">
                         <el-form :model="AllocatefundsNumber" label-width="80px">
-                            <el-form-item label="分配金额">
+                            <el-form-item label="分配金额" prop="number" :rules="allocateFundsRules">
                                 <el-input v-model="AllocatefundsNumber.number" placeholder="请输入分配的金额"></el-input>
                             </el-form-item>
                         </el-form>
@@ -546,12 +546,12 @@
                 </template>
                 <template>
                     <el-dialog
-                            title="分配资金"
+                            title="回收资金"
                             :visible.sync="dialogVisible7"
                             width="30%"
                             :before-close="handleClose7">
                         <el-form :model="AllocatefundsNumber" label-width="80px">
-                            <el-form-item label="回收金额">
+                            <el-form-item label="回收金额" prop="number" :rules="allocateFundsRules">
                                 <el-input v-model="AllocatefundsNumber.number" placeholder="请输入回收的金额"></el-input>
                             </el-form-item>
                         </el-form>
@@ -585,7 +585,28 @@
 
             data () {
             return {
-
+          //验证正则表达式
+                locationRules: [
+                    { required: true, message: '地址不能为空' },
+                    {
+                        pattern: /^[\u4e00-\u9fa5\d]+$/,
+                        message: '地址只能包含汉字和数字'
+                    }
+                ],
+                phoneRules: [
+                    { required: true, message: '手机号码不能为空' },
+                    {
+                        pattern: /^1[3-9]\d{9}$/,
+                        message: '手机号码格式不正确，应为1开头，第二位为3-9，共11位数字'
+                    }
+                ],
+                allocateFundsRules: [
+                    { required: true, message: '分配金额不能为空' },
+                    {
+                        pattern: /^(?!0+(\.0+)?$)[0-9]*\.?[0-9]+$/,
+                        message: '请输入大于0的数字'
+                    }
+                ],
                 value1: true,
                 //用户个人资金
                 userFund:"",
@@ -1032,7 +1053,7 @@
                             alert("退出成功");
                             _this.ShowPersonalGroup();
                         } else {
-                            alert('登录失败！');
+                            alert("请先加入群组");
                         }
                     },
                 })
@@ -1257,6 +1278,11 @@
             },
            //各群组余额查询
             GetGroupBalance() {
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
+
                 this.currentTable = "table4";
                 var _this = this;
                 $.ajax({
@@ -1319,16 +1345,13 @@
                     }
                 });
             },
-            // AllocatefundsNumber:{
-            //     number:"",
-            // },
             openAllocateDialog(row) {
-                this.currentRowData = row; // 将当前行数据保存在组件的一个变量中
-                this.dialogVisible6 = true; // 打开对话框
+                this.currentRowData = row;
+                this.dialogVisible6 = true;
             },
             openRecoveryDialog(row) {
-                this.currentRowData = row; // 将当前行数据保存在组件的一个变量中
-                this.dialogVisible7 = true; // 打开对话框
+                this.currentRowData = row;
+                this.dialogVisible7 = true;
             },
             Allocatefunds(rowIndex){
                 const username = this.currentRowData.username;

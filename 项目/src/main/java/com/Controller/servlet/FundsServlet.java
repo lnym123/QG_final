@@ -101,11 +101,16 @@ public class FundsServlet extends BaseServlet {
             String theuser = request.getParameter("Theuser");
             int Useramount = Integer.parseInt(request.getParameter("Useramount"));
             int pubilicAmount = Integer.parseInt(request.getParameter("pubilicAmount"));
+            if(pubilicAmount<0||Useramount<0){
+                resp.setCharacterEncoding("UTF-8");
+                resp.getWriter().write("数额过大请重新填写");
+                return;
+            }
             User user =userDAO.selectByname(theuser);
             String groupname =user.getGroupid();
             fundDAO.Allocatefunds(theuser,Useramount,pubilicAmount,groupname);
             resp.setCharacterEncoding("UTF-8");
-            resp.getWriter().write("分配完毕");
+            resp.getWriter().write("操作完毕");
         }
         public void ShowGroupFlow(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
             String username = request.getParameter("username");

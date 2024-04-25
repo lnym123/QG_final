@@ -34,5 +34,9 @@ public interface UserDAO {
 
     int ForLogOutGroup(String groupid,String username,int amount);
 
+    User CheckResetPasswordAccount(String username,String PhoneNumber,String location);
+
+    int ResetPassword(String username,String password);
+
 
 }
