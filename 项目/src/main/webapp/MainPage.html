@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+    <script src="lib/vue.js"></script>
+    <script src="element-ui/lib/index.js"></script>
+    <script src="lib/jquery-3.7.1.min.js"></script>
+    <script src="lib/axios-0.18.0.js"></script>
+    <script src="lib/FileSaver.js"></script>
+
+</head>
+
+<style>
+    .el-header, .el-footer {
+        background-color: #B3C0D1;
+        color: #333;
+        text-align: left;
+        line-height: 60px;
+
+    }
+    .el-dropdown-link {
+        cursor: pointer;
+        color: #409EFF;
+    }
+    .el-icon-arrow-down {
+        font-size: 12px;
+    }
+    .el-aside {
+        background-color: #D3DCE6;
+        color: #333;
+        text-align:center;
+        line-height: 200px;
+    }
+    .el-main {
+        background-color: #E9EEF3;
+        color: #333;
+        text-align: left;
+        line-height: 10px;
+    }
+
+    body > .el-container {
+        margin-bottom: 40px;
+    }
+
+    .el-container:nth-child(5) .el-aside,
+    .el-container:nth-child(6) .el-aside {
+        line-height: 260px;
+    }
+
+    .el-container:nth-child(7) .el-aside {
+        line-height: 320px;
+    }
+
+</style>
+<body>
+<div id="app">
+
+
+    <el-container>
+        <el-aside width="150px">
+
+            <el-row class="tac">
+
+                <el-col :span="27">
+                    <el-menu
+                            default-active="0"
+                            class="el-menu-vertical-demo"
+                            @open="handleOpen"
+                            @close="handleClose">
+                        <el-menu-item index="1">
+                            <span slot="title">QG资金管理系统</span>
+                        </el-menu-item>
+                        <el-menu-item index="2" @click="showPersonimf(), getPersonalFlow()">
+                            <i class="el-icon-user"></i>
+                            <span slot="title">个人中心</span>
+                        </el-menu-item>
+                        <el-menu-item index="3" @click="ShowPersonalGroup(),GetBalanceOfEachMemberInGroup(), GetGroupPublicFund()">
+                            <i class="el-icon-s-cooperation"></i>
+                            <span slot="title">我的群组</span>
+                        </el-menu-item>
+                        <el-menu-item index="4" @click="GetGroupBalance(),GetGroupFlow(),GetuserFund()">
+                            <i class="el-icon-s-data"></i>
+                            <span slot="title">资金中心</span>
+                        </el-menu-item>
+                    </el-menu>
+                </el-col>
+            </el-row>
+        </el-aside>
+        <el-container >
+            <el-header >
+
+                <template >
+
+                    <div  class="demo-type" style="display: flex; justify-content: space-between;">
+                        <div style="margin-right: 10px;" v-if="currentTable === 'table1'"  >公开的企业群组</div>
+                        <el-form :inline="true" v-if="currentTable === 'table1'" :model="formInline" class="demo-form-inline">
+                            <el-form-item label="企业名称">
+                                <el-input v-model="formInline.name" placeholder="企业名称"></el-input>
+                            </el-form-item>
+                            <el-form-item label="企业方向">
+                                <el-input v-model="formInline.direction" placeholder="企业方向"></el-input>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" @click="onSubmit">查询</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" style="margin-right: 50px" @click="dialogVisible2 = true" v-if="currentTable === 'table1'" >加入群组</el-button>
+                            </el-form-item>
+
+                        </el-form>
+                        <el-button  size="mini" v-else-if="currentTable === 'table2'||currentTable === 'table3'"  type="primary" @click="goBack">返回</el-button>
+                        <el-button style="margin-left:100px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible = true">修改数据</el-button>
+                        <el-button style="margin-left:10px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="dialogVisible1 = true">修改头像</el-button>
+                        <el-button style="margin-left:10px;margin-bottom:10px" v-if="currentTable === 'table2'" type="primary" @click="forLogout" >退出登录</el-button>
+                        <el-popover
+                                placement="right"
+                                width="400"
+                                trigger="click">
+                            <template>
+                                <div>
+                                    <el-table :data="gridData" style="width: 100%">
+                                        <el-table-column  prop="senter" label="发送者"></el-table-column>
+                                        <el-table-column  prop="message" label="消息内容"></el-table-column>
+
+                                        <el-table-column  width="200" label="操作">
+                                            <template slot-scope="{ row, $index }">
+                                                <div style="display: flex;">
+                                                    <!-- 第一个按钮 -->
+                                                    <el-button type="success" v-if="Authority> 1 && row.message !== '退出群组'&&row.type !== 'reply'" icon="el-icon-check" @click="handleConfirmButtonClick($index),handleDeleteButtonClick($index)">
+                                                     接受</el-button>
+                                                    <el-button type="success" v-if="Authority===1 && row.type === 'invitation'" icon="el-icon-check"  @click="UserAcceptInvitation($index)">
+                                                    接受 </el-button>
+                                                    <el-button type="danger" v-if="Authority===1 &&row.type === 'invitation'" icon="el-icon-close"  @click="UserDenyInvitation($index)">
+                                                    拒绝 </el-button>
+                                                    <!-- 第三个按钮 -->
+                                                    <el-button type="danger" v-if="Authority>1||(Authority===1 &&row.type === 'reply')" icon="el-icon-delete" @click="handleDeleteButtonClick($index)">
+                                                        删除
+                                                    </el-button>
+                                                </div>
+                                            </template>
+                                        </el-table-column>
+                                    </el-table>
+                                </div>
+                            </template>
+
+                            <el-button v-if="Authority>1" @click="GetMessageForAdmin" slot="reference">我的消息</el-button>
+                            <el-button v-else @click="GetMessageForUser" slot="reference">我的消息</el-button>
+                        </el-popover>
+                        <div style="margin-left:100px;margin-top: 10px" >
+
+                            <a   href="login.html" target="_self">
+                                <el-avatar :size="size" :src="circleUrl"></el-avatar>
+                            </a>
+                        </div>
+                        <div @click  id="userIdDisplay">{{ userId }}</div>
+
+                    </div>
+                </template>
+<!--                //加入群组的弹出框-->
+                <el-dialog
+                        title="加入群组"
+                        :visible.sync="dialogVisible2"
+                        width="30%"
+                        :before-close="handleClose2">
+
+                    <el-form :model="JoinGroup" label-position="left">
+                        <el-form-item label="输入要加入的企业名称">
+                            <el-input v-model="JoinGroup.companyName"></el-input>
+                        </el-form-item>
+                    </el-form>
+
+                    <span slot="footer">
+    <el-button @click="dialogVisible2 = false">取消</el-button>
+    <el-button type="primary" @click="handleJoinGroup">确定</el-button>
+  </span>
+                </el-dialog>
+
+            </el-header>
+            <el-main>
+                <template >
+                    <div class="container">
+
+<!--企业信息展示表格-->
+                        <el-table v-if="currentTable === 'table1'"
+                                  :data="tableData1"
+                                  style="width: 100%">
+                            <el-table-column
+                                    prop="groupname"
+                                    label="企业名称"
+                                    width="180">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="number"
+                                    label="企业人数">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="scale"
+                                    label="规模">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="direction"
+                                    label="企业方向">
+                            </el-table-column>
+                        </el-table>
+<!--                        个人信息展示表格-->
+                        <el-table v-else-if="currentTable === 'table2'"
+                                  :data="tableData"
+                                  stripe
+                                  style="width: 100%">
+                    <el-table-column
+                            prop="number"
+                            label="手机号">
+                    </el-table-column>
+                    <el-table-column
+                            prop="address"
+                            label="地址">
+                    </el-table-column>
+                    <el-table-column
+                            prop="group"
+                            label="所属群组">
+                    </el-table-column>
+                        </el-table>
+<!--                        我的群组页面群组介绍-->
+                        <el-table v-if="currentTable === 'table3'"
+                                  :data="tableData2"
+                                  style="width: 100%">
+                            <el-table-column
+                                    prop="groupname1"
+                                    label="企业名称"
+                                    width="180">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="number1"
+                                    label="企业人数">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="scale1"
+                                    label="规模">
+                            </el-table-column>
+                            <el-table-column
+                                    prop="direction1"
+                                    label="企业方向">
+                            </el-table-column>
+                        </el-table>
+
+                        <div style="display: flex; justify-content: space-between; margin-right: 500px; margin-bottom: 10px;">
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="warning" @click="logoutGroup">注销群组</el-button>
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible4=true" >设置群组信息</el-button>
+                            <el-button v-if="currentTable === 'table3'&&Authority>1" type="primary" @click="dialogVisible3=true">邀请他人进入群组</el-button>
+                            <el-popover  v-if="currentTable === 'table3'&&Authority>1"
+                                         placement="right"
+                                    width="400"
+                                    trigger="click">
+                                <template>
+                                    <div>
+                                        <el-table :data="ShouKuanRecords" style="width: 100%">
+                                            <el-table-column  prop="payer" label="支付者"></el-table-column>
+                                            <el-table-column  prop="time" label="支付时间"></el-table-column>
+                                            <el-table-column  prop="amount" label="支付金额"></el-table-column>
+
+                                            <el-table-column  width="200" label="操作">
+                                                <template slot-scope="{ row, $index }">
+                                                    <div style="display: flex;">
+                                                        <el-button type="success"  icon="el-icon-check" @click="handleGroupShouKuanaccept($index)">
+                                                            接受</el-button>
+                                                        <el-button type="danger"  icon="el-icon-delete" @click="handleShouKuanDeny($index)">
+                                                            拒绝
+                                                        </el-button>
+                                                    </div>
+                                                </template>
+                                            </el-table-column>
+                                        </el-table>
+                                    </div>
+                                </template>
+                                <el-button   style="margin-left: 20px" type="primary" @click="GetGroupShouKuanSituation" slot="reference">收款</el-button>
+                            </el-popover>
+                            <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="dialogVisible5 = true">申请我的群组</el-button>
+                            <el-button v-if="currentTable === 'table3'" type="primary" @click="forExitgroup">退出群组</el-button>
+                        </div>
+
+                    </div>
+            </template>
+<!--              个人剩余资金展示以及个人流水，位于个人中心页面-->
+                <div v-if="currentTable === 'table2'" style="display: flex; align-items: center;">
+                    <div>
+                        个人资金: {{ userFund }} 资金流水如下
+                    </div>
+                    <el-form :inline="true" style="margin-left: 100px;">
+                        <el-form-item label="分类查看">
+                            <el-select v-model="classificationFlow.name" placeholder="请选择类型" style="width: 200px;">
+                                <el-option label="交易对象" value="transaction_object"></el-option>
+                                <el-option label="交易时间" value="transaction_time"></el-option>
+                                <el-option label="交易方式" value="mode"></el-option>
+                                <el-option label="交易类型" value="type"></el-option>
+                                <el-option label="交易金额" value="amount"></el-option>
+                                <el-option label="交易状态" value="transaction_status"></el-option>
+                                <el-option label="全部" value="all" divided></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="内容">
+                            <el-input v-model="classificationFlow.content"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="selectFlow">查询</el-button>
+                        </el-form-item>
+                        <el-button @click="PersonalFlowexportToTxt" type="primary">打印流水</el-button>
+                    </el-form>
+
+                </div>
+                <template>
+                    <el-table
+                            v-if="currentTable === 'table2'"
+                            :data="PersonalFlow"
+                            style="  margin-top:10px;width: 100%">
+                        <el-table-column
+                                prop="object"
+                                label="交易对象"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="mode"
+                                label="交易方式"
+                                width="100">
+                        </el-table-column>
+                        <el-table-column
+                                prop="time"
+                                label="交易时间"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="交易类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="amount"
+                                label="交易金额">
+                        </el-table-column>
+                        <el-table-column
+                                prop="status"
+                                label="交易状态">
+                        </el-table-column>
+
+                    </el-table>
+                </template>
+
+<!--                  修改数据的对话框-->
+                <el-dialog
+                        title="修改数据"
+                        :visible.sync="dialogVisible"
+                        width="30%"
+                        :before-close="handleCloseForChange">
+                    <el-form ref="form" :model="User" label-width="80px">
+
+
+                        <el-form-item label="地址" prop="location" :rules="locationRules">
+                            <el-input v-model="User.location"></el-input>
+                        </el-form-item>
+                        <el-form-item label="密码">
+                            <el-input v-model="User.password"></el-input>
+                        </el-form-item>
+                        <el-form-item label="手机号" prop="PhoneNumber" :rules="phoneRules">
+                            <el-input v-model="User.PhoneNumber"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="changedata">修改</el-button>
+                            <el-button @click="dialogVisible = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+
+                </el-dialog>
+                <!-- 修改头像的对话框 -->
+                <el-dialog
+                        title="修改头像"
+                        :visible.sync="dialogVisible1"
+                        width="30%"
+                        :before-close="handleClose1">
+                    <form id="avatarForm" enctype="multipart/form-data" ref="avatarForm">
+                        <input type="file" name="avatar" accept="image/*" required>
+                        <button  type="submit" @click="uploadAvatar">上传头像</button>
+                        <div id="resultMessage"></div>
+                    </form>
+                </el-dialog>
+                <!--//邀请他人表格-->
+                <template>
+                    <el-dialog
+                            title="邀请他人"
+                            :visible.sync="dialogVisible3"
+                            width="30%"
+                            :before-close="handleClose3">
+
+                        <el-form :model="inviteForm" label-width="80px">
+                            <el-form-item label="姓名">
+                                <el-input v-model="inviteForm.name" placeholder="请输入被邀请人的姓名"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <span slot="footer" class="dialog-footer">
+      <el-button @click="dialogVisible3 = false">取消</el-button>
+      <el-button type="primary" @click="submitInvite">确认邀请</el-button>
+    </span>
+                    </el-dialog>
+                </template>
+<!--                设置群组信息对话框-->
+                <el-dialog
+                        title="设置群组信息"
+                        :visible.sync="dialogVisible4"
+                        width="30%"
+                        :before-close="handleCloseForChange4">
+                    <el-form ref="form" :model="AdminChangeGroup" label-width="100px">
+
+                        <el-form-item label="企业人数" prop="number" :rules="numberRules">
+                            <el-input v-model.number="AdminChangeGroup.number"></el-input>
+                        </el-form-item>
+                        <el-form-item label="企业规模" prop="scale" :rules="scaleRules">
+                            <el-input v-model="AdminChangeGroup.scale"></el-input>
+                        </el-form-item>
+                        <el-form-item label="企业方向" prop="direction" :rules="directionRules">
+                            <el-input v-model="AdminChangeGroup.direction"></el-input>
+                        </el-form-item>
+                        <el-form-item label="群组是否公开">
+                            <el-switch v-model="AdminChangeGroup.isvisiable"></el-switch>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="ForAdminChangeGroup">修改</el-button>
+                            <el-button @click="dialogVisible4 = false">取消</el-button>
+                        </el-form-item>
+                        </el-form>
+                </el-dialog>
+<!--                申请个人群组对话框-->
+                <el-dialog
+                        title=" 申请个人群组"
+                        :visible.sync="dialogVisible5"
+                        width="30%"
+                        :before-close="handleCloseForChange5">
+                    <el-form ref="form" :model="ApplyOwnGroup" label-width="100px">
+                        <el-form-item label="企业名称" :rules="GroupNameRules">
+                            <el-input  v-model="ApplyOwnGroup.groupname"></el-input>
+                        </el-form-item>
+                        <div style="margin-bottom: 30px">其余企业信息待申请成功自行修改</div>
+                        <el-form-item>
+                            <el-button type="primary" @click="ForApplyOwnGroup">提交</el-button>
+                            <el-button @click="dialogVisible5 = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+<!--//资金中心页-->
+                <div v-if="currentTable === 'table4'" style="display: flex; align-items: center;">
+                    <div style="margin-right: 20px;"> <!-- 添加了一些右边距 -->
+                        个人资金: {{ userFund }}
+                    </div>
+                    <div v-if="Authority > 1">
+                        群内资金明细如下
+                    </div>
+                    <a  style="margin-left: 20px" href="Payment simulation.html" target="_self">
+                        开启支付
+                    </a>
+<!--                //展示消息记录-->
+                    <el-popover
+                            placement="right"
+                            width="400"
+                            trigger="click">
+                        <template>
+                            <div>
+                                <el-table :data="FuKuanRecords" style="width: 100%">
+                                    <el-table-column  prop="object" label="付款对象"></el-table-column>
+                                    <el-table-column  prop="amount" label="金额"></el-table-column>
+                                    <el-table-column  prop="time" label="时间"></el-table-column>
+                                    <el-table-column  prop="status" label="交易状态"></el-table-column>
+                                    <el-table-column  width="400" label="操作">
+                                        <template slot-scope="{ row, $index }">
+                                            <div style="display: flex;">
+                                                <el-button type="success" v-if="row.status==='拒绝收款'" icon="el-icon-circle-plus-outline" @click="handleSendFuKuanAgain($index)">
+                                                    再次发送</el-button>
+                                                <el-button type="danger"  v-if="row.status==='拒绝收款'" icon="el-icon-folder-remove"  @click="UserCancleFuKuan($index)">
+                                                    取消付款 </el-button>
+                                                <el-button type="danger" v-if="row.status==='已收款'||row.status==='退款'"  icon="el-icon-delete" @click="DeleFukuanRecords($index)">
+                                                    删除
+                                                </el-button>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </template>
+                        <el-button  style="margin-left: 20px" type="primary" @click="GetFuKuanSituation" slot="reference">付款情况</el-button>
+                    </el-popover>
+                    <el-popover
+                            placement="right"
+                            width="400"
+                            trigger="click">
+                        <template>
+                            <div>
+                                <el-table :data="ShouKuanRecords" style="width: 100%">
+                                    <el-table-column  prop="payer" label="支付者"></el-table-column>
+                                    <el-table-column  prop="time" label="支付时间"></el-table-column>
+                                    <el-table-column  prop="amount" label="支付金额"></el-table-column>
+
+                                    <el-table-column  width="200" label="操作">
+                                        <template slot-scope="{ row, $index }">
+                                            <div style="display: flex;">
+                                                <el-button type="success"  icon="el-icon-check" @click="handleShouKuanaccept($index)">
+                                                    接受</el-button>
+                                                <el-button type="danger"  icon="el-icon-delete" @click="handleShouKuanDeny($index)">
+                                                    拒绝
+                                                </el-button>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </template>
+                        <el-button  style="margin-left: 20px" type="primary" @click="GetShouKuanSituation" slot="reference">收款</el-button>
+                    </el-popover>
+
+                    <el-button @click="GroupFlowexportToTxt" style="margin-left: 30px" type="primary">打印流水</el-button>
+
+
+
+                </div>
+                <!--                //显示群组资金明细-->
+                <template>
+                    <el-table
+                            v-if="currentTable === 'table4'&&Authority > 1"
+                            :data="GroupFlow"
+                            style="  margin-top:10px;width: 100%">
+                        <el-table-column
+                                prop="username"
+                                label="交易用户"
+                                width="100">
+                        </el-table-column>
+                        <el-table-column
+                                prop="object"
+                                label="交易对象"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="time"
+                                label="交易时间"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="交易类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="amount"
+                                label="交易金额">
+                        </el-table-column>
+                        <el-table-column
+                                prop="status"
+                                label="交易状态">
+                        </el-table-column>
+
+                    </el-table>
+                </template>
+
+
+      <div v-if="currentTable ==='table4'" STYLE="margin-top:20PX">
+                各群组余额如下
+            </div>
+                <!--                //不同群组资金余额-->
+                <template >
+                    <el-table  v-if="currentTable ==='table4'"
+                            :data="BalanceOfEachEnterprise"
+                               style="margin-top: 20px">
+                        <el-table-column
+                                prop="groupname"
+                                label="名称"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="number"
+                                label="余额"
+                                width="180">
+                        </el-table-column>
+
+                    </el-table>
+                </template>
+    <!--//  群组管理员管理群组内资金-->
+                <div  v-if="currentTable ==='table3'&&Authority>1">群组内各群员及其群内资金   群内公共资金: {{ GroupPublicFunds }} </div>
+                <template >
+                    <el-table  v-if="currentTable ==='table3'&&this.Authority>1"
+                               :data="BalanceOfEachMemberInGroup"
+                               style="margin-top: 20px">
+                        <el-table-column
+                                prop="username"
+                                label="名称"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="number"
+                                label="群内余额"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column  label="操作">
+                            <template slot-scope="{ row, $index }">
+                                <div style="display: flex;">
+                                    <!-- 第一个按钮 -->
+                                    <el-button  type="success" icon="el-icon-check" @click="openAllocateDialog(row)">
+                                        分配资金
+                                    </el-button>
+                                    <el-button   type="success"  icon="el-icon-check" @click="openRecoveryDialog(row)">
+                                        回收资金</el-button>
+                                </div>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </template>
+                <template>
+                    <el-dialog
+                            title="分配资金"
+                            :visible.sync="dialogVisible6"
+                            width="30%"
+                            :before-close="handleClose6">
+                        <el-form :model="AllocatefundsNumber" label-width="80px">
+                            <el-form-item label="分配金额" prop="number" :rules="allocateFundsRules">
+                                <el-input v-model="AllocatefundsNumber.number" placeholder="请输入分配的金额"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <span slot="footer" class="dialog-footer">
+      <el-button @click="dialogVisible6 = false">取消</el-button>
+      <el-button type="primary" @click="Allocatefunds">分配</el-button>
+    </span>
+                    </el-dialog>
+                </template>
+                <template>
+                    <el-dialog
+                            title="回收资金"
+                            :visible.sync="dialogVisible7"
+                            width="30%"
+                            :before-close="handleClose7">
+                        <el-form :model="AllocatefundsNumber" label-width="80px">
+                            <el-form-item label="回收金额" prop="number" :rules="allocateFundsRules">
+                                <el-input v-model="AllocatefundsNumber.number" placeholder="请输入回收的金额"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <span slot="footer" class="dialog-footer">
+      <el-button @click="dialogVisible7 = false">取消</el-button>
+      <el-button type="primary" @click="Recoveryfunds">回收</el-button>
+    </span>
+                    </el-dialog>
+                </template>
+
+
+
+            </el-main>
+        </el-container>
+    </el-container>
+
+
+</div>
+
+</body>
+
+<script>
+    new Vue({
+        el: '#app',
+        mounted() {
+            this.showgroups();
+           this.checkToken();
+           this.GetuserFund();
+        },
+            data () {
+            return {
+          //验证正则表达式
+                locationRules: [
+                    { required: true, message: '地址不能为空' },
+                    {
+                        pattern: /^[\u4e00-\u9fa5\d]+$/,
+                        message: '地址只能包含汉字和数字'
+                    }
+                ],
+                phoneRules: [
+                    { required: true, message: '手机号码不能为空' },
+                    {
+                        pattern: /^1[3-9]\d{9}$/,
+                        message: '手机号码格式不正确，应为1开头，第二位为3-9，共11位数字'
+                    }
+                ],
+                allocateFundsRules: [
+                    { required: true, message: '分配金额不能为空' },
+                    {
+                        pattern: /^(?!0+(\.0+)?$)[0-9]*\.?[0-9]+$/,
+                        message: '请输入大于0的数字'
+                    }
+                ],
+                //设置群组信息的验证
+                numberRules: [
+                    { required: true, message: '企业人数不能为空', trigger: 'blur' },
+                    { validator: this.checkNumber, trigger: ['blur', 'change'] }
+                ],
+                scaleRules: [
+                    { required: true, message: '企业规模不能为空', trigger: 'blur' },
+                    { validator: this.checkChinese, trigger: ['blur', 'change'] }
+                ],
+                GroupNameRules: [
+                    { required: true, message: '企业名不能为空', trigger: 'blur' },
+                    { validator: this.checkChinese, trigger: ['blur', 'change'] }
+                ],
+                directionRules: [
+                    { required: true, message: '企业方向不能为空', trigger: 'blur' },
+                    { validator: this.checkChinese, trigger: ['blur', 'change'] }
+                ],
+                value1: true,
+                //用户个人资金
+                userFund:"",
+                //各群的公共资金
+                GroupPublicFunds:"",
+                currentTable: 'table1',
+                //流水的分类查询
+                classificationFlow:{
+                    name:"",
+                    content:""
+                },
+                //个人的付款记录
+                FuKuanRecords:[{
+                    object:"",
+                    amount:"",
+                    time:"",
+                    status:"",
+                }],
+                //个人收款记录
+                ShouKuanRecords:[{
+                    payer:"",
+                    time:"",
+                    amount:"",
+                    nominal:"",
+                }],
+                //各个群组余额
+                BalanceOfEachEnterprise:[{
+                    groupname:"",
+                    number:"",
+                }],
+                //各个群员组内资金
+                BalanceOfEachMemberInGroup:[{
+                    username:"",
+                    number:"",
+                    authority:""
+                }],
+                // 搜索框表单
+                formInline: {
+                    name: '',
+                    direction: ''
+                },
+                //修改数据的信息
+                User: {
+                    password: '',
+                    location: '',
+                    PhoneNumber:'',
+                },
+                //修改群组信息
+                 AdminChangeGroup: {
+                    number: '',
+                    scale: '',
+                     direction:'',
+                     isvisiable:''
+                },
+                //申请个人群组
+                ApplyOwnGroup:{
+                    groupname:'',
+                },
+                //分配资金
+                currentRowData: null,
+                AllocatefundsNumber:{
+                  number:"",
+                },
+                // 个人信息展示表格数据
+                tableData: [{
+                    number:"",
+                    address:"",
+                    group: "",
+                    password:""
+                }],
+                // 所有群组信息展示表格数据
+                tableData1: [{
+                    groupname:"",
+                    number:"",
+                    scale:"",
+                    direction:"",
+
+                }, ],
+                // 个人所在群组信息展示
+                tableData2: [{
+                    groupname1:"",
+                    number1:"",
+                    scale1:"",
+                    direction1:"",
+                    locked:"",
+
+                }, ],
+                // 消息
+                gridData: [{
+                    senter: '',
+                    message: '',
+                    type:'',
+                    groupid:'',
+                },],
+                JoinGroup: {
+                    companyName: ''
+                },//邀请他人加入企业
+                inviteForm: {
+                    name: '',
+                },
+                //个人流水
+                PersonalFlow:[{
+                    object:"",
+                    mode:"",
+                    time:'',
+                    amount:'',
+                    status:'',
+                    type:""
+                },],
+                columnHeaders: ['object', 'mode', 'time','amount','status','type'], // 表格的列头信息
+                //群组流水
+                GroupFlow:[{
+                    username:"",
+                    object:"",
+                    time:'',
+                    amount:'',
+                    status:"",
+                    type:""
+                },],
+                circleUrl: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+                userId: '游客',
+                sizeList: ["large", "medium", "small"],
+                Authority:"",
+
+                //修改用户信息对话框是否展示
+                dialogVisible: false,
+                //修改头像对话框是否展示
+                dialogVisible1: false,
+                //加入群组的对话框
+                dialogVisible2 :false,
+                //邀请他人加入群组的对话框
+                dialogVisible3:false,
+                //设置群组信息对话框，
+                dialogVisible4:false,
+                //申请个人群组的对话框
+                dialogVisible5:false,
+                //分配资金
+                dialogVisible6:false,
+                //回收资金
+                dialogVisible7:false,
+                //发起支付的表单
+                dialogVisible8:false,
+            }
+        },methods: {
+            handleOpen(key, keyPath) {
+                console.log(key, keyPath);
+            },
+            handleCloseForChange(key, keyPath) {
+                   this.dialogVisible=false;
+            },
+
+            handleClose1(done) {
+                this.dialogVisible1 = false;
+            },
+            handleClose2(done) {
+                this.dialogVisible2 = false;
+            },
+            handleClose3(done){
+                this.dialogVisible3 = false;
+            },
+            handleClose4(done){
+                this.dialogVisible4 = false;
+            },
+            handleClose5(done){
+                this.dialogVisible5 = false;
+            },
+            handleClose6(done){
+                this.dialogVisible6 = false;
+            },
+            handleClose7(done){
+                this.dialogVisible7 = false;
+            },
+            //校验
+            showPersonimf() {
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ShowImformation',
+                    method: 'POST',
+                    data: { username: this.userId },
+                    dataType: 'json',
+                    success: (response) => {
+                            // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                           this.tableData = [
+                                {
+                                    password:response.password,
+                                    number: response.number,
+                                    address: response.address,
+                                    group: response.group
+                                }
+                            ];
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+                this.currentTable="table2";
+            },showgroups() {
+
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ShowGroups',
+                    method: 'POST',
+                    dataType: 'json',
+                    success:  (response) => {
+
+                        const tableData1 = response.map(group => ({
+                            groupname: group.groupname,
+                            number: group.number,
+                            scale: group.scale,
+                            direction: group.direction,
+                        }));
+                        this.tableData1 = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            handleDelete(row) {
+                console.log('Received row:', row); // 输出接收到的行数据
+                const index = this.gridData.findIndex(item => item.id === row.id);
+                if (index !== -1) {
+                    console.log('Found index:', index); // 输出找到的索引
+                    console.log('Grid data at index:', this.gridData[index]); // 输出对应索引处的 gridData 项
+                    // 显示这一行的senter数据（如果需要的话）
+                    const senterValue = row.senter;
+                    alert(senterValue); // 使用alert显示senter的值
+                    // 删除这一行
+                    this.gridData.splice(index, 1);
+                } else {
+                    console.warn('Row with id', row.id, 'not found in gridData.'); // 如果找不到索引，输出警告
+                }
+            },
+            //实时获得个人资金
+            GetuserFund(){
+              var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/GetuserFund',
+                    method: 'POST',
+                    data: {
+                        username: _this.userId,
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        _this.userFund=response.personalfunds;
+                    },
+                });
+            },
+
+
+            changedata(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ForChangeData',
+                    method: 'POST',
+                    data: {
+                        username: _this.userId,
+                        password: this.User.password,
+                        location: this.User.location,
+                        PhoneNumber: this.User.PhoneNumber,
+
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                        _this.dialogVisible=false;
+                        _this.showPersonimf();
+                    },
+
+                });
+          }, handleRemove(file, fileList) {
+                console.log(file, fileList);
+            },
+            async uploadAvatar(event) {
+                event.preventDefault();
+
+                const formData = new FormData($('#avatarForm')[0]);
+                formData.append('username', this.userId); // 添加用户名字段
+                formData.append('userId', this.userId); // 假设我们需要同时发送用户ID
+
+                try {
+                    const response = await axios.post('http://localhost:8080/jwt_test/user/FileUpload', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+
+                    if (response.data.success) {
+                        $('#resultMessage').text('头像上传成功！');
+                        this.checkToken();
+                    } else {
+                        $('#resultMessage').text('头像上传失败：' + response.data.message);
+                    }
+                } catch (error) {
+                    $('#resultMessage').text('上传过程中发生错误：' + error.message);
+                }
+            },
+            goBack() {
+             this.currentTable="table1";
+             this.showgroups();
+            },
+            //消息删除
+            handleDeleteButtonClick(rowIndex) {
+                // 从 gridData 中移除指定索引的数据项
+                const currentRow = this.gridData[rowIndex];
+                // // 获取当前行的 senter 和 message 数据
+                const senter = currentRow.senter;
+                const message = currentRow.message;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/DeleteMessage',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        TheMessage:message
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                    },
+                    error:{},
+                  })
+            },
+            //消息确认
+            handleConfirmButtonClick(rowIndex) {
+                var _this=this;
+                const currentRow = this.gridData[rowIndex];
+                const senter = currentRow.senter;
+                const type=currentRow.type;
+
+
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/Agreement',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        id:_this.userId
+                    },
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                    },
+                    error:{},
+                })
+            },
+            //群组搜索
+            onSubmit() {
+                if ((this.formInline.name === null || this.formInline.name === undefined || this.formInline.name === "") &&
+                    (this.formInline.direction === null || this.formInline.direction === undefined || this.formInline.direction === "")){
+
+                    this.showgroups();
+                    return;
+                }
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/GroupQueryService',
+                    method: 'POST',
+                    data: {
+                        groupName:this.formInline.name,
+                        direction:this.formInline.direction
+                    },
+                    dataType: 'json',
+                    success:  (response) => {
+                        const tableData1 = response.map(group => ({
+                            groupname: group.groupname,
+                            number: group.number,
+                            scale: group.scale,
+                            direction: group.direction,
+                        }));
+                        this.tableData1 = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+
+                })
+
+
+            },
+            //处理用户申请加入群组
+            handleJoinGroup() {
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/Sendapplication',
+                    method: 'POST',
+                    data: {
+                        senter:this.userId,
+                        groupid:this.JoinGroup.companyName,
+                        sendmessage: "申请加入 " + this.JoinGroup.companyName
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                         alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+
+                    },
+
+
+                })
+                this.dialogVisible2 = false;
+            },
+            //退出登录
+            forLogout(){
+                const TOKEN_KEY = 'jwtToken';
+                localStorage.removeItem(TOKEN_KEY);
+                window.location.href ="login.html";
+            },
+            //展示个人群组数据
+            ShowPersonalGroup(){
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
+                this.currentTable="table3";
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ShowPersonalGroup',
+                    method: 'POST',
+                    data:{username:this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        if(response===null){
+
+                            this.tableData2  = [
+                                {
+                                    groupname1:" ",
+                                    number1:" ",
+                                    scale1:" ",
+                                    direction1:" ",
+                                    locked:"",
+                                },
+                            ];
+                            return;
+                        }
+                        this.tableData2  = [
+                            {
+                                groupname1:response.groupname,
+                                number1:response.number,
+                                scale1:response.scale,
+                                direction1:response.direction,
+                                locked:response.Locked
+                            },
+                        ];
+
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+
+            },
+            //退出群组
+            forExitgroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ExitfromGroup',
+                    method: 'POST',
+                    data: {  username:this.userId
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            alert("退出成功");
+                            _this.ShowPersonalGroup();
+                        } else {
+                            alert("请先加入群组");
+                        }
+                    },
+                })
+
+            },
+            GetMessageForAdmin(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForAdminMessage',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                        const Tdata = response.map(group => ({
+                            senter:group.senter,
+                            message:group.message,
+                            type:group.type,
+                            groupid:group.groupid,
+                        }));
+                        this.gridData = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            GetMessageForUser(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForUserMessage',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        // 将响应对象转换为数组，数组中只有一个元素，即当前用户的数据
+                        const Tdata = response.map(group => ({
+                            senter:group.senter,
+                            message:group.message,
+                            type:group.type,
+                            groupid:group.groupid,
+                        }));
+                        this.gridData = Tdata;
+                        // previousData = response;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            submitInvite() {
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/SendInvitation',
+                    method: 'POST',
+                    data:{recipient:_this.inviteForm.name,
+                          senter:this.userId},
+                    dataType: 'text',
+                    success:  (response) => {
+                       alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+
+                this.dialogVisible3 = false;
+            },
+            UserAcceptInvitation(rowIndex) {
+                var _this = this;
+                const currentRow = this.gridData[rowIndex];
+                const senter = currentRow.senter;
+                const Nowgroupid=currentRow.groupid;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/UserAcceptInvitation',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        username:_this.userId,
+                        Thegroupname:Nowgroupid,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+            //群管理员修改企业信息
+            ForAdminChangeGroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/ForAdminChangeGroup',
+                    method: 'POST',
+                    data: {
+                        id:_this.userId,
+                        number: this.AdminChangeGroup.number,
+                        scale: this.AdminChangeGroup.scale,
+                        direction: this.AdminChangeGroup.direction,
+                        visiable:this.AdminChangeGroup.isvisiable
+                    },
+                    dataType: 'text',
+                    success: function (response) {
+                        alert(response);
+                        _this.ShowPersonalGroup();
+                        _this.dialogVisible4=false;
+                    },
+                });
+            },
+            ForApplyOwnGroup(){
+                var _this=this;
+                if(this.Authority>1){
+                    alert("已有群组，且为管理员，请先注销群组");
+                    return;
+                }
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/ForApplyOwnGroup',
+                    method: 'POST',
+                    data: {
+                        TheSenter:_this.userId,
+                        TheGroupId:this.ApplyOwnGroup.groupname
+                    },
+                    dataType: 'text',
+                    success: function (response) {
+                        alert(response);
+                        _this.dialogVisible5=false;
+                    },
+                });
+            },
+            UserDenyInvitation(rowIndex){
+                var _this = this;
+                const currentRow = this.gridData[rowIndex];
+                const senter = currentRow.senter;
+                const Thegroupid= currentRow.groupid
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/UserDenyInvitation',
+                    method: 'POST',
+                    data: {
+                        TheSenter:senter,
+                        username:_this.userId,
+                        groupid:Thegroupid
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+            getPersonalFlow() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/ShowPersonalFlow',
+                    method: 'POST',
+                    data: {username: this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        const tableData1 = response.map(group => ({
+                            object:group.transaction_object,
+                            mode:group.mode,
+                            time:group.transaction_time,
+                            amount:group.amount,
+                            status:group.transaction_status,
+                            type:group.type
+
+                        }));
+                        this.PersonalFlow= tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },//流水的分类查询
+
+            selectFlow(){
+                if(this.classificationFlow.name==="all"){
+                    this.getPersonalFlow();
+                    return;
+                }
+                if ((this.classificationFlow.name === null || this.classificationFlow.name === undefined ||  this.classificationFlow.name === "") &&
+                    (this.classificationFlow.content === null || this.classificationFlow.content === undefined || this.classificationFlow.content === "")){
+                    this.getPersonalFlow();
+                    return;
+                }
+
+                if(this.classificationFlow.content === null || this.classificationFlow.content === undefined || this.classificationFlow.content === ""){
+                    alert("请输入查询内容");
+                    return;
+                }
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/fundsQueryService',
+                    method: 'POST',
+                    data: {
+                        name:this.classificationFlow.name,
+                        content:this.classificationFlow.content,
+                        username:_this.userId
+                    },
+                    dataType: 'json',
+                    success:  (response) => {
+                        const tableData1 = response.map(group => ({
+                            object:group.transaction_object,
+                            time:group.transaction_time,
+                            mode:group.mode,
+                            amount:group.amount,
+                            status:group.transaction_status,
+                            type:group.type
+
+                        }));
+                        this.PersonalFlow= tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                })
+            },
+           //各群组余额查询
+            GetGroupBalance() {
+                if(this.userId==="游客"){
+                    alert("请先点击头像登录");
+                    return;
+                }
+
+                this.currentTable = "table4";
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/GetGroupBalance',
+                    method: 'POST',
+                    dataType: 'json',
+                    success: (response) => {
+                        const tableData1 = response.map(item => ({
+                            groupname: item.groupname,
+                            number: item.number
+                        }));
+                        this.BalanceOfEachEnterprise = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            //管理员查看组员余额
+            GetBalanceOfEachMemberInGroup(){
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/GetBalanceOfEachMemberInGroup',
+                    method: 'POST',
+                    data:{
+                        TheAdminName:_this.userId,
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                        const tableData1 = response.map(item => ({
+                            username:item.username,
+                            number:item.groupfunds,
+                            authority:item.authority
+                        }));
+                        this.BalanceOfEachMemberInGroup = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            GetGroupPublicFund(){
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/GetGroupPublicFund',
+                    method: 'POST',
+                    data:{
+                        TheAdminName:_this.userId,
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                        this.GroupPublicFunds =response.publicfunds;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            openAllocateDialog(row) {
+                this.currentRowData = row;
+                this.dialogVisible6 = true;
+            },
+            openRecoveryDialog(row) {
+                this.currentRowData = row;
+                this.dialogVisible7 = true;
+            },
+            //分配资金
+            Allocatefunds(rowIndex){
+                const username = this.currentRowData.username;
+                const amount= this.currentRowData.number;
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds',
+                        method: 'POST',
+                        data:{
+                            Theuser:username,
+                            Useramount:Number(amount) + Number(_this.AllocatefundsNumber.number),
+                            pubilicAmount:_this.GroupPublicFunds-Number(_this.AllocatefundsNumber.number),
+                        },
+                    dataType:'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.dialogVisible6=false;
+                        _this.GetBalanceOfEachMemberInGroup(),
+                            _this.GetGroupPublicFund()
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            //回收资金
+            Recoveryfunds(rowIndex){
+                const username = this.currentRowData.username;
+                const amount= this.currentRowData.number;
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds',
+                    method: 'POST',
+                    data:{
+                        Theuser:username,
+                        Useramount:Number(amount) - Number(_this.AllocatefundsNumber.number),
+                        pubilicAmount:_this.GroupPublicFunds+Number(_this.AllocatefundsNumber.number),
+                    },
+                    dataType:'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.dialogVisible7=false;
+                        _this.GetBalanceOfEachMemberInGroup(),
+                            _this.GetGroupPublicFund()
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            //注销群组
+            logoutGroup(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/group/LogOutGroup',
+                    method: 'POST',
+                    data:{
+                      TheAdmin:_this.userId,
+                        PublicFunds:_this.GroupPublicFunds
+                    },
+                    dataType:'text',
+                    success: (response) => {
+
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            //得到群组流水
+            GetGroupFlow() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/funds/ShowGroupFlow',
+                    method: 'POST',
+                    data: {username: this.userId},
+                    dataType: 'json',
+                    success: (response) => {
+                        const tableData1 = response.map(group => ({
+                            object: group.transaction_object,
+                            username: group.username,
+                            time: group.transaction_time,
+                            amount: group.amount,
+                            status: group.transaction_status,
+                            type: group.type
+                        }));
+                        this.GroupFlow = tableData1;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                });
+            },
+            //个人流水打印
+            generatePersonalTxtContent() {
+                const columnHeaders = ['交易对象',  '交易方式',  '交易时间',  '交易类型',  '交易金额', '交易状态'];
+
+                const formattedText = [columnHeaders.join('\t')];
+
+                this.PersonalFlow.forEach(row => {
+                    formattedText.push(Object.values(row).join('\t\t'));
+                });
+                return formattedText.join('\n');
+            },PersonalFlowexportToTxt() {
+                const txtContent = this.generatePersonalTxtContent();
+                const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+                saveAs(blob, 'personal_flow_data.txt');
+            },
+            //群组流水打印
+            generateGroupTxtContent() {
+                const columnHeaders = ['交易用户','交易对象',  '交易时间',  '交易类型',  '交易金额', '交易状态'];
+                const formattedText = [columnHeaders.join('\t\t')];
+
+                this.GroupFlow.forEach(row => {
+                    formattedText.push(Object.values(row).join('\t\t'));
+                });
+                return formattedText.join('\n');
+            },GroupFlowexportToTxt() {
+                const txtContent = this.generateGroupTxtContent();
+                const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+                saveAs(blob, 'Group_flow_data.txt');
+            },
+            GetFuKuanSituation(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/GetFuKuanSituation',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        const Tdata = response.map(group => ({
+                            object:group.recipient,
+                            amount:group.amount,
+                            time:group.transaction_time,
+                            status:group.status,
+                        }));
+                        this.FuKuanRecords = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            GetShouKuanSituation(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/GetShouKuanSituation',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        const Tdata = response.map(group => ({
+                            payer:group.payer,
+                            amount:group.amount,
+                            time:group.transaction_time,
+                        }));
+                        this.ShouKuanRecords = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            handleShouKuanaccept(rowIndex){
+                var _this = this;
+                const currentRow = this.ShouKuanRecords[rowIndex];
+                const payer = currentRow.payer;
+                const amount =currentRow.amount;
+                const time =currentRow.time;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/UserAcceptShouKuan',
+                    method: 'POST',
+                    data: {
+                        Therecipient:_this.userId,
+                     ThePayer:payer,
+                        TheAmount:amount,
+                        TheTime:time,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.GetuserFund();
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },//拒绝收款
+            handleShouKuanDeny(rowIndex){
+                var _this = this;
+                const currentRow = this.ShouKuanRecords[rowIndex];
+                const payer = currentRow.payer;
+                const amount =currentRow.amount;
+                const time =currentRow.time;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/UserDenyShouKuan',
+                    method: 'POST',
+                    data: {
+                        Therecipient:_this.userId,
+                        ThePayer:payer,
+                        TheAmount:amount,
+                        TheTime:time,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.GetuserFund();
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+           //再次发送申请
+            handleSendFuKuanAgain(rowIndex){
+                var _this = this;
+                const currentRow = this.FuKuanRecords[rowIndex];
+                const object = currentRow.object;
+                const amount =currentRow.amount;
+                const time =currentRow.time;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/SendFuKuanAgain',
+                    method: 'POST',
+                    data: {
+                        Therecipient:object,
+                        ThePayer:_this.userId,
+                        TheAmount:amount,
+                        TheTime:time,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.GetuserFund();
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+            UserCancleFuKuan(rowIndex){
+                var _this = this;
+                const currentRow = this.FuKuanRecords[rowIndex];
+                const object = currentRow.object;
+                const amount =currentRow.amount;
+                const time =currentRow.time;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/CancelFuKuanAgain',
+                    method: 'POST',
+                    data: {
+                        Therecipient:object,
+                        ThePayer:_this.userId,
+                        TheAmount:amount,
+                        TheTime:time,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.GetuserFund();
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+            DeleFukuanRecords(rowIndex){
+                var _this = this;
+                const currentRow = this.FuKuanRecords[rowIndex];
+                const object = currentRow.object;
+                const amount =currentRow.amount;
+                const time =currentRow.time;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/DeleteFuKuan',
+                    method: 'POST',
+                    data: {
+                        Therecipient:object,
+                        ThePayer:_this.userId,
+                        TheAmount:amount,
+                        TheTime:time,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+            GetGroupShouKuanSituation(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/GetGroupShouKuanSituation',
+                    method: 'POST',
+                    data:{id:_this.userId},
+                    dataType: 'json',
+                    success:  (response) => {
+                        const Tdata = response.map(group => ({
+                            payer:group.payer,
+                            amount:group.amount,
+                            time:group.transaction_time,
+                            nominal:group.nominal
+                        }));
+                        this.ShouKuanRecords = Tdata;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    }
+                });
+            },
+            handleGroupShouKuanaccept(rowIndex){
+                var _this = this;
+                const currentRow = this.ShouKuanRecords[rowIndex];
+                const payer = currentRow.payer;
+                const amount =currentRow.amount;
+                const time =currentRow.time;
+                const nominal=currentRow.nominal;
+                this.gridData.splice(rowIndex, 1);
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/GroupShouKuanaccept',
+                    method: 'POST',
+                    data: {
+                        Therecipient:_this.userId,
+                        ThePayer:payer,
+                        TheAmount:amount,
+                        TheTime:time,
+                        TheNominal:nominal,
+                    },
+                    dataType: 'text',
+                    success: (response) => {
+                        alert(response);
+                        _this.GetGroupPublicFund();
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('请求失败:', error);
+                        // 处理请求失败逻辑
+                    },
+                })
+            },
+            checkNumber(rule, value, callback) {
+                if (value === '' || Number(value) > 0) {
+                    callback();
+                } else {
+                    callback(new Error('企业人数必须大于0'));
+                }
+            },
+            checkChinese(rule, value, callback) {
+                const reg = /^[\u4e00-\u9fa5]+$/;
+                if (value === '' || reg.test(value)) {
+                    callback();
+                } else {
+                    callback(new Error('只能输入汉字'));
+                }
+            },
+            checkToken() {// 当页面加载完成后
+                        // 在Vue实例创建时尝试从localStorage获取token
+                        this.token = localStorage.getItem('jwtToken');
+                        if (this.token) {
+                            try {
+                                // 分割JWT字符串为三部分: header.payload.signature
+                                const [header, payload, signature] = this.token.split('.');
+                                // Base64解码负载部分
+                                const decodedPayload = window.atob(payload);
+                                // 解析负载部分的JSON字符串
+                                const tokenData = JSON.parse(decodedPayload);
+                                // 从token数据中提取username并赋值给userId
+                                if (tokenData && tokenData.username) {
+                                    console.log("用户名：", tokenData.username);
+                                    this.userId = tokenData.username;
+                                    this.Authority = tokenData.authority;
+                                    this.userFund = tokenData.PersonalFunds;
+                                    if (this.Authority === 0) {
+                                        this.userId = "游客"
+                                    }
+                                }
+                                if (tokenData && tokenData.avatar_url) {
+                                    console.log("图片路径：", tokenData.avatar_url);
+                                    const urlPrefix = 'images/'; // 假设图片位于Web应用的/images目录下
+                                    // 从本地路径中提取图片文件名（包括扩展名）
+                                    const fileName = tokenData.avatar_url.split('\\').pop(); // 在Windows中路径分隔符是反斜杠\
+                                    // 拼接URL前缀和文件名得到完整的图片URL
+                                    const imageUrl = urlPrefix + fileName;
+                                    console.log("imageUrl")
+
+                                    // 将得到的URL赋值给this.circleUrl
+                                    this.circleUrl = imageUrl;
+                                    console.log(this.circleUrl)
+                                }
+                            } catch (error) {
+                                console.error('解析token时出错:', error);
+                            }
+                        } else {
+                            console.log('localStorage中没有找到token');
+                        }
+
+                    }
+        }
+        })
+
+
+</script>
+
+</html>

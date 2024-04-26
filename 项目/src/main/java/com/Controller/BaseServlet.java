@@ -28,9 +28,19 @@ public class BaseServlet extends HttpServlet {
         //2.获取最后一段路径 （方法名）
         try {
             Method method = cls.getMethod(methodName, HttpServletRequest.class, HttpServletResponse.class);
-            method.invoke(this,req,resp);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            method.invoke(this, req, resp);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            // 获取底层异常并处理
+            Throwable cause = e.getCause();
+            if (cause instanceof ServletException) {
+                throw (ServletException) cause;
+            } else if (cause instanceof IOException) {
+                throw (IOException) cause;
+            } else {
+                throw new RuntimeException("An unexpected exception occurred while processing the request.", cause);
+            }
         }
     }
 }

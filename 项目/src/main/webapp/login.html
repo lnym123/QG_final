@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Login & Register</title>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="lib/jquery-3.7.1.min.js"></script>
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-    <script src="element-ui/lib/theme-chalk/index.css"></script>
-    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+      <script src="lib/jquery-3.7.1.min.js"></script>
+       <script src="lib/vue.js"></script>
+        <script src="element-ui/lib/index.js"></script>
+        <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
 </head>
 
 <body>
@@ -26,7 +25,9 @@
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="handleLogin">登录</el-button>
-                    <el-button type="primary" native-type="submit">游客登录</el-button>
+                    <el-button type="primary" @click="handleTouristLogin">游客登录</el-button><br>
+                    <el-button type="primary" @click="dialogVisible='true'">忘记密码</el-button>
+                    <el-button type="primary" @click="dialogVisible2='true'">申请解禁</el-button>
                 </el-form-item>
 
             </el-form>
@@ -36,20 +37,22 @@
                 <el-form-item label="用户名">
                     <el-input style="width: 200px;" v-model="registerForm.username" placeholder="请输入用户名"></el-input>
                 </el-form-item>
-                <el-form-item label="密码">
-                    <el-input style="width: 200px;" type="password"  v-model="registerForm.password" placeholder="请输入密码"></el-input>
+                <!-- 密码 -->
+                <el-form-item label="密码" prop="password" :rules="passwordRules">
+                    <el-input style="width: 200px;" type="password" v-model="registerForm.password" @input="triggerConfirmPasswordValidation" placeholder="请输入密码"></el-input>
                 </el-form-item>
-                <el-form-item label="昵称">
-                    <el-input style="width: 200px;" type="nickname" v-model="registerForm.nickname" placeholder="请输入昵称"></el-input>
+                <!-- 地址 -->
+                <el-form-item label="地址" prop="location" :rules="locationRules">
+                    <el-input style="width: 200px;" v-model="registerForm.location" placeholder="请输入地址"></el-input>
                 </el-form-item>
-                <el-form-item label="地址">
-                    <el-input style="width: 200px;" type="location" v-model="registerForm.location" placeholder="请输入地址"></el-input>
+                <!-- 手机号码 -->
+                <el-form-item label="手机号码" prop="PhoneNumber" :rules="phoneNumberRules">
+                    <el-input style="width: 200px;" v-model="registerForm.PhoneNumber" placeholder="请输入手机号码"></el-input>
                 </el-form-item>
-                <el-form-item label="手机号码">
-                    <el-input style="width: 200px;" type="password" v-model="registerForm.PhoneNumber" placeholder="请输入手机号码"></el-input>
-                </el-form-item>
-                <el-form-item label="确认密码">
-                    <el-input   style="width: 200px;" type="password" v-model="registerForm.confirmPassword" placeholder="请再次输入密码"></el-input>
+
+                <!-- 确认密码 -->
+                <el-form-item label="确认密码" prop="confirmPassword" :rules="confirmPasswordRules">
+                    <el-input style="width: 200px;" type="password" v-model="registerForm.confirmPassword" placeholder="请再次输入密码"></el-input>
                 </el-form-item>
                 <el-form-item>
                     <el-button  @click="handleRegister">注册</el-button>
@@ -57,6 +60,64 @@
             </el-form>
         </el-tab-pane>
     </el-tabs>
+    <el-dialog
+            title="忘记密码"
+            :visible.sync="dialogVisible"
+            width="30%"
+            :before-close="handleCloseForChange">
+        <el-form ref="form" :model="User" label-width="80px">
+            <el-form-item label="账号">
+                <el-input  style="width: 200px;" v-model="User.username" placeholder="请输入账号"></el-input>
+            </el-form-item>
+            <el-form-item label="地址" prop="location" :rules="locationRules">
+                <el-input style="width: 200px;" v-model="User.location" placeholder="请输入地址"></el-input>
+            </el-form-item>
+            <el-form-item label="手机号码" prop="PhoneNumber" :rules="phoneNumberRules">
+                <el-input style="width: 200px;" v-model="User.PhoneNumber" placeholder="请输入手机号码"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="ResetPassword1()">重置密码</el-button>
+                <el-button @click="dialogVisible = false">取消</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+    <el-dialog
+            title="忘记密码"
+            :visible.sync="dialogVisible1"
+            width="30%"
+            :before-close="handleCloseForChange1">
+        <el-form ref="form" :model="Reset" label-width="80px">
+            <el-form-item label="密码" prop="password" :rules="passwordRules">
+                <el-input style="width: 200px;" type="password" v-model="Reset.password" @input="triggerConfirmPasswordValidation" placeholder="请输入密码"></el-input>
+            </el-form-item>
+            <el-form-item label="确认密码" prop="confirmPassword" :rules="confirmPasswordRules1">
+                <el-input style="width: 200px;" type="password" v-model="Reset.confirmPassword" placeholder="请再次输入密码"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="ResetPassword2()">重置密码</el-button>
+                <el-button @click="dialogVisible1 = false">取消</el-button>
+            </el-form-item>
+        </el-form>
+
+    </el-dialog>
+<!--    //发送解禁请求-->
+    <el-dialog
+            title="发送解决请求"
+            :visible.sync="dialogVisible2"
+            width="30%"
+            :before-close="handleClose2">
+
+        <el-form :model="SendRequest" label-position="left">
+            <el-form-item label="输入你的用户名">
+                <el-input v-model="SendRequest.name"></el-input>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer">
+    <el-button @click="dialogVisible2 = false">取消</el-button>
+    <el-button type="primary" @click="sendUnBanRequest">确定</el-button>
+  </span>
+    </el-dialog>
 </div>
 
 <script>
@@ -64,33 +125,136 @@
         el: "#app",
         data() {
             return {
+                User: {
+                    username: "",
+                    location: "",
+                    PhoneNumber: ""
+                },
+                dialogVisible: false,
+                dialogVisible1: false,
+                dialogVisible2:false,
+                userId: "",
                 activeTab: "login",
                 loginForm: {
                     username: "",
                     password: ""
                 },
+                Reset: {
+                    password: "",
+                    confirmPassword: ""
+                },
+                SendRequest:{
+                    name:"",
+                },
                 registerForm: {
                     username: "",
                     password: "",
-                    nickname:"",
-                    location:"",
-                    PhoneNumber:"",
+                    nickname: "",
+                    location: "",
+                    PhoneNumber: "",
                     confirmPassword: ""
-                }
-            };
+                },
+                phoneNumberRules: [
+                    {required: true, message: '手机号码不能为空'},
+                    {
+                        pattern: /^1[3-9]\d{9}$/,
+                        message: '手机号码格式不正确，应为1开头，第二位为3-9，共11位数字'
+                    }
+                ],
+                confirmPasswordRules: [
+                    {required: true, message: '确认密码不能为空'},
+                    {
+                        validator: (rule, value, callback) => {
+                            if (value !== this.registerForm.password) {
+                                callback(new Error('两次输入的密码不一致'));
+                            } else {
+                                callback();
+                            }
+                        },
+                        trigger: 'blur'
+                    }
+                ],
+                confirmPasswordRules1: [
+                    {required: true, message: '确认密码不能为空'},
+                    {
+                        validator: (rule, value, callback) => {
+                            if (value !==this.Reset.password) {
+                                callback(new Error('两次输入的密码不一致'));
+                            } else {
+                                callback();
+                            }
+                        },
+                        trigger: 'blur'
+                    }
+                ],
+
+                locationRules:[
+                    { required: true, message: '地址不能为空' },
+                    {
+                        pattern: /^[\u4e00-\u9fa5]+$/,
+                        message: '地址只能包含汉字'
+                    }
+                ]
+            }
         },
         methods: {
+            handleCloseForChange(key, keyPath) {
+                this.dialogVisible=false;
+            },
+            handleCloseForChange1(key, keyPath) {
+                this.dialogVisible1=false;
+            },
+            triggerConfirmPasswordValidation() {
+                this.$refs.registerForm.validateField('confirmPassword');
+            },
+            handleClose2(done) {
+                this.dialogVisible2 = false;
+            },
             handleLogin(event) {
+                var _this=this;
                 console.log("登录表单提交:", this.loginForm);
                 $.ajax({
-                    url: 'login',
+                    url: 'http://localhost:8080/jwt_test/user/ForLogin',
                     method: 'POST',
                     data: this.loginForm,
+                    dataType: 'json',
+                    statusCode: {
+                        200: function(response) {
+                            var jwtToken = response.token;
+                            localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
+                            // 登录成功后的操作，如跳转页面等
+                            _this.checkToken();
+                            if (_this.userId === 'admin') {
+                                window.location.href = "adminpage.html";
+                                return;
+                            }
+                            window.location.href = "MainPage.html";
+                        },
+                        403: function(response) {
+                            // 账号被封禁处理逻辑
+                            alert("您的账号已被封禁，无法登录");
+                            return;
+                        },
+                    },
+                    error: function(xhr, status, error) {
+                        // 通用错误处理逻辑
+                        alert("登录失败: " + status);
+                    }
+                });
+
+            },
+            handleTouristLogin() {
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ForLogin',
+                    method: 'POST',
+                    data: {username:"游客",
+                           password:"null"},
                     dataType: 'json',
                     success: (response) => {
                         var jwtToken = response.token;
                         localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
                         // 登录成功后的操作，如跳转页面等
+
                         window.location.href = "main page2.html";
                     },
                     error: (xhr, status, error) => {
@@ -101,7 +265,7 @@
             handleRegister() {
                 console.log("注册表单提交:", this.registerForm);
                 $.ajax({
-                    url: 'register',
+                    url: 'http://localhost:8080/jwt_test/user/ForRegister',
                     method: 'POST',
                     data: this.registerForm,
                     datatype:'text',
@@ -112,11 +276,97 @@
 
                     }
                 })
+            },
+            ResetPassword1() {
+                var _this = this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ResetPassword',
+                    method: 'POST',
+                    data: {
+                        username: _this.User.username,
+                        location: _this.User.location,
+                        PhoneNumber: _this.User.PhoneNumber // 确保属性名与后端预期一致
+                    },
+                    dataType: 'json', // 修正为正确的dataType
+                    success: function (response) {
+                        if (response.success) {
+                             _this.dialogVisible=false;
+                            _this.dialogVisible1=true;
+                        } else {
+                           alert("该账号不存在")
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Request failed: ", error);
+                        // 处理请求失败的情况
+                    }
+                });
+            },
+            ResetPassword2(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/ForResetPassword',
+                    method: 'POST',
+                    data:{
+                        object:_this.User.username,
+                        password:_this.Reset.password
+                    },
+                    datatype:'text',
+                    success: (response) => {
+                        alert(response)
+                        _this.dialogVisible1=false;
+                    },
+                    error: (xhr, status, error) => {
+                        console.error('Login failed:', error);
+
+                    }
+                })
+            },
+            sendUnBanRequest(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/sendUnBanReques',
+                    method: 'POST',
+                    data:{
+                       username:_this.SendRequest.name
+                    },
+                    datatype:'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                    }
+                })
+            },
+
+            checkToken(){// 当页面加载完成后
+                // 在Vue实例创建时尝试从localStorage获取token
+                this.token = localStorage.getItem('jwtToken');
+                if (this.token) {
+                    try {
+                        // 分割JWT字符串为三部分: header.payload.signature
+                        const [header, payload, signature] = this.token.split('.');
+                        // Base64解码负载部分
+                        const decodedPayload = window.atob(payload);
+                        // 解析负载部分的JSON字符串
+                        const tokenData = JSON.parse(decodedPayload);
+                        // 从token数据中提取username并赋值给userId
+                        if (tokenData && tokenData.username) {
+                            console.log("用户名：", tokenData.username);
+                            this.userId = tokenData.username;
+
+                        }
+                    } catch (error) {
+                        console.error('解析token时出错:', error);
+                    }
+                } else {
+                    console.log('localStorage中没有找到token');
+                }
+
             }
         }
     });
 </script>
 
-</script>
 </body>
 </html>

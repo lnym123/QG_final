@@ -7,11 +7,53 @@ public class User {
 
     private Integer id;
 
-    public User(String username, String password, String location, String nickname, String phoneNumber) {
+    private String username;
+    private String password;
+
+    private String location;
+
+
+    private String PhoneNumber;
+
+    private int authority;
+    private String groupid;
+
+    private String avatar_url;
+
+    public int getPersonalfunds() {
+        return Personalfunds;
+    }
+
+    public void setPersonalfunds(int personalfunds) {
+        Personalfunds = personalfunds;
+    }
+
+    public int getGroupfunds() {
+        return Groupfunds;
+    }
+
+    public void setGroupfunds(int groupfunds) {
+        Groupfunds = groupfunds;
+    }
+
+    public String getLocked() {
+        return Locked;
+    }
+
+    public void setLocked(String locked) {
+        Locked = locked;
+    }
+
+    private int Personalfunds;
+
+    private int Groupfunds;
+
+    private String Locked;
+
+    public User(String username, String password, String location,  String phoneNumber) {
         this.username = username;
         this.password = password;
         this.location = location;
-        this.nickname = nickname;
         PhoneNumber = phoneNumber;
     }
 
@@ -20,28 +62,8 @@ public class User {
         this.password = password;
     }
 
-    private String username;
-    private String password;
-
-    private String location;
-
-    private String nickname;
-
-    private String PhoneNumber;
-
-    public String getAvatar_url() {
-        return avatar_url;
-    }
-
-    public void setAvatar_url(String avatar_url) {
-        this.avatar_url = avatar_url;
-    }
-
-    private String groupid;
-
-    private String avatar_url;
     public User() {
-        // 可以为空，也可以初始化一些默认值
+
     }
 
     @Override
@@ -51,12 +73,33 @@ public class User {
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", location='" + location + '\'' +
-                ", nickname='" + nickname + '\'' +
                 ", PhoneNumber='" + PhoneNumber + '\'' +
+                ", authority=" + authority +
                 ", groupid='" + groupid + '\'' +
+                ", avatar_url='" + avatar_url + '\'' +
+                ", Personalfunds=" + Personalfunds +
+                ", Groupfunds=" + Groupfunds +
+                ", Locked='" + Locked + '\'' +
                 '}';
     }
 
+
+
+    public String getAvatar_url() {
+        return avatar_url;
+    }
+
+    public int getAuthority() {
+        return authority;
+    }
+
+    public void setAuthority(int authority) {
+        this.authority = authority;
+    }
+
+    public void setAvatar_url(String avatar_url) {
+        this.avatar_url = avatar_url;
+    }
     public String getGroupid() {
         return groupid;
     }
@@ -96,14 +139,6 @@ public class User {
 
     public void setLocation(String location) {
         this.location = location;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
     }
 
     public String getPhoneNumber() {
