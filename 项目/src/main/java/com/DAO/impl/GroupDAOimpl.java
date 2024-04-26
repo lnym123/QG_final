@@ -88,7 +88,7 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
     @Override
     public Group selectById(String GroupName) {
         try {
-            String sql = "SELECT groupname,number,scale,direction FROM tb_group where groupname = ?";
+            String sql = "SELECT groupname,number,scale,direction,Locked FROM tb_group where groupname = ?";
             return executeQueryBean(Group.class,sql,GroupName);
         } catch (Exception e) {
             throw new RuntimeException(e);

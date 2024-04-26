@@ -116,5 +116,15 @@ public  class MessageDAOimpl extends BaseDAO implements MessageDAO {
         }
     }
 
+    @Override
+    public int sendUserUnBanReques(String username) {
+        try {
+            String sql = "INSERT INTO tb_message(senter,message,recipient,type) VALUES (?,?,?,?)";
+            return executeUpdate(sql,username, "请求解除封禁","admin","ban");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 }

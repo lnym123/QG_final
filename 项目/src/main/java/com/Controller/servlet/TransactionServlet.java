@@ -2,23 +2,31 @@ package com.Controller.servlet;
 
 import com.Controller.BaseServlet;
 import com.DAO.FundDAO;
+import com.DAO.GroupDAO;
 import com.DAO.TransactionDAO;
 import com.DAO.UserDAO;
 import com.DAO.impl.FundDAOimpl;
+import com.DAO.impl.GroupDAOimpl;
 import com.DAO.impl.TransactionDAOimpl;
 import com.DAO.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.pojo.Funds;
+import com.pojo.Group;
 import com.pojo.Transaction;
 import com.pojo.User;
+import com.util.JDBCUtilV2;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,6 +35,7 @@ public class TransactionServlet extends BaseServlet {
     TransactionDAO transactionDAO = new TransactionDAOimpl();
     UserDAO userDAO = new UserDAOImpl();
     FundDAO fundDAO= new FundDAOimpl();
+    GroupDAO groupDAO= new GroupDAOimpl();
 
     public void SendTransaction(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
         LocalDateTime currentTime = LocalDateTime.now(); // 定义日期时间格式
@@ -38,37 +47,93 @@ public class TransactionServlet extends BaseServlet {
         String object = request.getParameter("object");//收款者
         String password = request.getParameter("password");//密码
         int number = Integer.parseInt(request.getParameter("number"));//交易金额
+        if (number<1) {
+            resp.getWriter().write("请输入大于0的数字");
+            return;
+        }
         User user = userDAO.selectByname(username);
         String TruePassword = user.getPassword();  //得到正确密码
-
         if (!TruePassword.equals(password)) {
             resp.getWriter().write("密码错误");
             return;
         }
-
-        String inTheNameOf = request.getParameter("InTheNameOf");
-        if(inTheNameOf.equals("个人")){
-        Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",null,"个人");
-        userDAO.FreezePersonalFund(username,number);
-        transactionDAO.SendTransaction(transaction);
-        }else{  //以群组名义
-            String groupname = user.getGroupid();//得到群组
-            if (groupname == null || groupname.isEmpty()) {
-                 resp.getWriter().write("用户不在群组之中");
-                 return;
-            }
-            upload = request.getParameter("upload");
-            int GroupFunds = user.getGroupfunds();
-            if (GroupFunds < number) {
-              resp.getWriter().write("用户在群组内资金不足");
-                return;
-                         }
-            Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",groupname,"群组");
-            userDAO.FreezeGroupFund(username,number);
-            transactionDAO.SendTransaction(transaction);
+       //确认交易对象是否存在
+        List<User> users=userDAO.selectAllUser();
+        List<Group> groups=groupDAO.selectAllForAdmin();
+        List<String> names = new ArrayList<>();
+        for (User user1 : users) {
+            names.add(user1.getUsername());
         }
-        resp.setCharacterEncoding("UTF-8");
-        resp.getWriter().write("支付请求已发出");
+        for (Group group1 : groups) {
+            names.add(group1.getGroupname());
+        }
+        for (String name : names) {
+            if(name.equals(object)){
+
+                String inTheNameOf = request.getParameter("InTheNameOf");
+                if(inTheNameOf.equals("个人")){//事务保证发送和冻结资金同时发生
+                    Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",null,"个人");
+                    Connection connection= null;
+                    try {
+                        connection= JDBCUtilV2.getConnection();
+                        connection.setAutoCommit(false);
+                        //操作
+                        userDAO.FreezePersonalFund(username,number);
+                        transactionDAO.SendTransaction(transaction);
+                        //提交
+                        connection.commit();
+                    } catch (Exception e) {
+                        try {
+                            connection.rollback();
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                        throw new RuntimeException(e);
+                    }finally {
+                        JDBCUtilV2.release();
+                    }
+
+
+                }else{  //以群组名义
+                    String groupname = user.getGroupid();//得到群组
+                    if (groupname == null || groupname.isEmpty()) {
+                        resp.getWriter().write("用户不在群组之中");
+                        return;
+                    }
+                    upload = request.getParameter("upload");
+                    int GroupFunds = user.getGroupfunds();
+                    if (GroupFunds < number) {
+                        resp.getWriter().write("用户在群组内资金不足");
+                        return;
+                    }
+                    Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",groupname,"群组");
+                    Connection connection= null;
+                    try {
+                        connection= JDBCUtilV2.getConnection();
+                        connection.setAutoCommit(false);
+                        //操作
+                        userDAO.FreezeGroupFund(username,number);
+                        transactionDAO.SendTransaction(transaction);
+                        //提交
+                        connection.commit();
+                    } catch (Exception e) {
+                        try {
+                            connection.rollback();
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                        throw new RuntimeException(e);
+                    }finally {
+                        JDBCUtilV2.release();
+                    }
+
+                }
+                resp.getWriter().write("支付请求已发出");
+                return;
+            }
+        }
+        resp.getWriter().write("交易对象不存在");
+
     }
 
 
@@ -96,13 +161,30 @@ public class TransactionServlet extends BaseServlet {
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
         String therecipient = request.getParameter("Therecipient");
-        transactionDAO.GetShouKuanRecord(thePayer,theAmount,theTime,therecipient);
-        //写入流水
-        Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","个人",null);
-        //付款方的流水
-        Funds funds2=new Funds(thePayer,therecipient,theTime,"支出",theAmount,"已收款","个人",null);
-        fundDAO.ShouKuanFund(funds1);
-        fundDAO.ShouKuanFund(funds2);
+        Connection connection= null;
+        try {
+            connection= JDBCUtilV2.getConnection();
+            connection.setAutoCommit(false);
+            //操作
+            transactionDAO.GetShouKuanRecord(thePayer,theAmount,theTime,therecipient);
+            //写入流水
+            Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","个人",null);
+            //付款方的流水
+            Funds funds2=new Funds(thePayer,therecipient,theTime,"支出",theAmount,"已收款","个人",null);
+            fundDAO.ShouKuanFund(funds1);
+            fundDAO.ShouKuanFund(funds2);
+            //提交
+            connection.commit();
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilV2.release();
+        }
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已收款");
     }
@@ -111,7 +193,25 @@ public class TransactionServlet extends BaseServlet {
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
         String therecipient = request.getParameter("Therecipient");
-        transactionDAO.DenyShoukuanRecord(thePayer,theAmount,theTime,"拒绝收款");
+        Connection connection= null;
+        try {
+            connection= JDBCUtilV2.getConnection();
+            connection.setAutoCommit(false);
+            //操作
+            transactionDAO.DenyShoukuanRecord(thePayer,theAmount,theTime,"拒绝收款");
+            //提交
+            connection.commit();
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilV2.release();
+        }
+
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已拒绝");
     }
@@ -120,7 +220,24 @@ public class TransactionServlet extends BaseServlet {
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
         String therecipient = request.getParameter("Therecipient");
-        transactionDAO.DenyShoukuanRecord(thePayer,theAmount,theTime,"已结算");
+        Connection connection= null;
+        try {
+            connection= JDBCUtilV2.getConnection();
+            connection.setAutoCommit(false);
+            //操作
+            transactionDAO.DenyShoukuanRecord(thePayer,theAmount,theTime,"已结算");
+            //提交
+            connection.commit();
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilV2.release();
+        }
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("再次发送成功");
     }
@@ -130,8 +247,26 @@ public class TransactionServlet extends BaseServlet {
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
         String therecipient = request.getParameter("Therecipient");
-        transactionDAO.DenyShoukuanRecord(thePayer,theAmount,theTime,"退款");
-        transactionDAO.CancelFuKuanAgain(thePayer,theAmount);
+        Connection connection= null;
+        try {
+            connection= JDBCUtilV2.getConnection();
+            connection.setAutoCommit(false);
+            //操作
+            transactionDAO.DenyShoukuanRecord(thePayer,theAmount,theTime,"退款");
+            transactionDAO.CancelFuKuanAgain(thePayer,theAmount);
+            //提交
+            connection.commit();
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilV2.release();
+        }
+
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已取消支付");
 
@@ -171,49 +306,50 @@ public class TransactionServlet extends BaseServlet {
        String groupname= user.getGroupid(); //真正的收款者，群名
        String TheNominal=request.getParameter("TheNominal");
        //如果以群组名义，payer是群组名，如果名义是个人，payer是人名，
-       transactionDAO.GetGroupShouKuanRecord(thePayer,theAmount,theTime,groupname);//入账，修改订单信息
-       if(TheNominal.equals("个人")){
-           //写入收款方流水
-            Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","群组",groupname);
-            fundDAO.ShouKuanFund(funds1);
-            //写入付款方流水
-           Funds funds2 = new Funds(thePayer,groupname, theTime, "支出", theAmount, "已收款", "个人",null);
-                   fundDAO.ShouKuanFund(funds2);
-       }else{
-           //写入收款方流水
-           Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","群组",groupname);
-           fundDAO.ShouKuanFund(funds1);
-           //写入付款方流水
-           List<Transaction> transactions=transactionDAO.GetShouKuanTransactionS(groupname);//得到未转换前的群组
-           for (Transaction transaction : transactions) {//获得已群组名义支付的正在的payer
-             if(transaction.getAmount()==TheAmount&&transaction.getTransaction_time().equals(theTime)){
-                 Funds funds2 = new Funds(transaction.getPayer(),groupname, theTime, "支出", theAmount, "已收款", "群组",transaction.getGroupname());
-                 fundDAO.ShouKuanFund(funds2);
-        }}
+       Connection connection= null;
+       try {
+           connection= JDBCUtilV2.getConnection();
+           connection.setAutoCommit(false);
+           //操作
+           transactionDAO.GetGroupShouKuanRecord(thePayer,theAmount,theTime,groupname);//入账，修改订单信息
+           if(TheNominal.equals("个人")){
+               //写入收款方流水
+               Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","群组",groupname);
+               fundDAO.ShouKuanFund(funds1);
+               //写入付款方流水
+               Funds funds2 = new Funds(thePayer,groupname, theTime, "支出", theAmount, "已收款", "个人",null);
+               fundDAO.ShouKuanFund(funds2);
+           }else{
+               //写入收款方流水
+               Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","群组",groupname);
+               fundDAO.ShouKuanFund(funds1);
+               //写入付款方流水
+               List<Transaction> transactions=transactionDAO.GetShouKuanTransactionS(groupname);//得到未转换前的群组
+               for (Transaction transaction : transactions) {//获得已群组名义支付的正在的payer
+                   if(transaction.getAmount()==TheAmount&&transaction.getTransaction_time().equals(theTime)){
+                       Funds funds2 = new Funds(transaction.getPayer(),groupname, theTime, "支出", theAmount, "已收款", "群组",transaction.getGroupname());
+                       fundDAO.ShouKuanFund(funds2);
+                   }}
 
+           }
+           //提交
+           connection.commit();
+       } catch (Exception e) {
+           try {
+               connection.rollback();
+           } catch (Exception ex) {
+               throw new RuntimeException(ex);
+           }
+           throw new RuntimeException(e);
+       }finally {
+           JDBCUtilV2.release();
        }
+
+
        resp.setCharacterEncoding("UTF-8");
        resp.getWriter().write("已收款");
    }
 }
 
-//
-
-//
-
-
-
-////付款方的流水
-////               if(transaction.getNominal().equals("群组")) {
-////
-////               }else{
-////                   Funds funds2 = new Funds(transaction.getPayer(), groupname, theTime, "支出", theAmount, "已收款", "个人", transaction.getGroupname());
-////                   fundDAO.ShouKuanFund(funds2);
-////               }
-//
-//
-//           }
-//                   }
-//
 
 

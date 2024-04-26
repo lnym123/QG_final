@@ -27,6 +27,7 @@
                     <el-button type="primary" @click="handleLogin">登录</el-button>
                     <el-button type="primary" @click="handleTouristLogin">游客登录</el-button><br>
                     <el-button type="primary" @click="dialogVisible='true'">忘记密码</el-button>
+                    <el-button type="primary" @click="dialogVisible2='true'">申请解禁</el-button>
                 </el-form-item>
 
             </el-form>
@@ -39,9 +40,6 @@
                 <!-- 密码 -->
                 <el-form-item label="密码" prop="password" :rules="passwordRules">
                     <el-input style="width: 200px;" type="password" v-model="registerForm.password" @input="triggerConfirmPasswordValidation" placeholder="请输入密码"></el-input>
-                </el-form-item>
-                <el-form-item label="昵称">
-                    <el-input style="width: 200px;" type="nickname" v-model="registerForm.nickname" placeholder="请输入昵称"></el-input>
                 </el-form-item>
                 <!-- 地址 -->
                 <el-form-item label="地址" prop="location" :rules="locationRules">
@@ -102,6 +100,24 @@
         </el-form>
 
     </el-dialog>
+<!--    //发送解禁请求-->
+    <el-dialog
+            title="发送解决请求"
+            :visible.sync="dialogVisible2"
+            width="30%"
+            :before-close="handleClose2">
+
+        <el-form :model="SendRequest" label-position="left">
+            <el-form-item label="输入你的用户名">
+                <el-input v-model="SendRequest.name"></el-input>
+            </el-form-item>
+        </el-form>
+
+        <span slot="footer">
+    <el-button @click="dialogVisible2 = false">取消</el-button>
+    <el-button type="primary" @click="sendUnBanRequest">确定</el-button>
+  </span>
+    </el-dialog>
 </div>
 
 <script>
@@ -116,6 +132,7 @@
                 },
                 dialogVisible: false,
                 dialogVisible1: false,
+                dialogVisible2:false,
                 userId: "",
                 activeTab: "login",
                 loginForm: {
@@ -125,6 +142,9 @@
                 Reset: {
                     password: "",
                     confirmPassword: ""
+                },
+                SendRequest:{
+                    name:"",
                 },
                 registerForm: {
                     username: "",
@@ -171,8 +191,8 @@
                 locationRules:[
                     { required: true, message: '地址不能为空' },
                     {
-                        pattern: /^[\u4e00-\u9fa5\d]+$/,
-                        message: '地址只能包含汉字和数字'
+                        pattern: /^[\u4e00-\u9fa5]+$/,
+                        message: '地址只能包含汉字'
                     }
                 ]
             }
@@ -186,6 +206,9 @@
             },
             triggerConfirmPasswordValidation() {
                 this.$refs.registerForm.validateField('confirmPassword');
+            },
+            handleClose2(done) {
+                this.dialogVisible2 = false;
             },
             handleLogin(event) {
                 var _this=this;
@@ -205,12 +228,12 @@
                                 window.location.href = "adminpage.html";
                                 return;
                             }
-                            window.location.href = "main page2.html";
+                            window.location.href = "MainPage.html";
                         },
                         403: function(response) {
                             // 账号被封禁处理逻辑
                             alert("您的账号已被封禁，无法登录");
-                            return; // 添加return以避免继续执行
+                            return;
                         },
                     },
                     error: function(xhr, status, error) {
@@ -300,6 +323,23 @@
                     }
                 })
             },
+            sendUnBanRequest(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/message/sendUnBanReques',
+                    method: 'POST',
+                    data:{
+                       username:_this.SendRequest.name
+                    },
+                    datatype:'text',
+                    success: (response) => {
+                        alert(response)
+                    },
+                    error: (xhr, status, error) => {
+                    }
+                })
+            },
+
             checkToken(){// 当页面加载完成后
                 // 在Vue实例创建时尝试从localStorage获取token
                 this.token = localStorage.getItem('jwtToken');

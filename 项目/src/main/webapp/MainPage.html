@@ -211,11 +211,6 @@
                                   stripe
                                   style="width: 100%">
                     <el-table-column
-                            prop="nickname"
-                            label="昵称"
-                            width="180">
-                    </el-table-column>
-                    <el-table-column
                             prop="number"
                             label="手机号">
                     </el-table-column>
@@ -282,7 +277,6 @@
                                 </template>
                                 <el-button   style="margin-left: 20px" type="primary" @click="GetGroupShouKuanSituation" slot="reference">收款</el-button>
                             </el-popover>
-
                             <el-button v-if="currentTable === 'table3'" style="margin-left: 500px"  type="primary" @click="dialogVisible5 = true">申请我的群组</el-button>
                             <el-button v-if="currentTable === 'table3'" type="primary" @click="forExitgroup">退出群组</el-button>
                         </div>
@@ -312,7 +306,7 @@
                         <el-form-item>
                             <el-button type="primary" @click="selectFlow">查询</el-button>
                         </el-form-item>
-                        <el-button @click="exportToTxt" type="primary">打印流水</el-button>
+                        <el-button @click="PersonalFlowexportToTxt" type="primary">打印流水</el-button>
                     </el-form>
 
                 </div>
@@ -360,9 +354,7 @@
                         :before-close="handleCloseForChange">
                     <el-form ref="form" :model="User" label-width="80px">
 
-                        <el-form-item label="昵称">
-                            <el-input v-model="User.nickname"></el-input>
-                        </el-form-item>
+
                         <el-form-item label="地址" prop="location" :rules="locationRules">
                             <el-input v-model="User.location"></el-input>
                         </el-form-item>
@@ -418,13 +410,13 @@
                         :before-close="handleCloseForChange4">
                     <el-form ref="form" :model="AdminChangeGroup" label-width="100px">
 
-                        <el-form-item label="企业人数">
-                            <el-input v-model="AdminChangeGroup.number"></el-input>
+                        <el-form-item label="企业人数" prop="number" :rules="numberRules">
+                            <el-input v-model.number="AdminChangeGroup.number"></el-input>
                         </el-form-item>
-                        <el-form-item label="企业规模">
+                        <el-form-item label="企业规模" prop="scale" :rules="scaleRules">
                             <el-input v-model="AdminChangeGroup.scale"></el-input>
                         </el-form-item>
-                        <el-form-item label="企业方向">
+                        <el-form-item label="企业方向" prop="direction" :rules="directionRules">
                             <el-input v-model="AdminChangeGroup.direction"></el-input>
                         </el-form-item>
                         <el-form-item label="群组是否公开">
@@ -438,13 +430,13 @@
                 </el-dialog>
 <!--                申请个人群组对话框-->
                 <el-dialog
-                        title="设置群组信息"
+                        title=" 申请个人群组"
                         :visible.sync="dialogVisible5"
                         width="30%"
                         :before-close="handleCloseForChange5">
                     <el-form ref="form" :model="ApplyOwnGroup" label-width="100px">
-                        <el-form-item label="企业名称">
-                            <el-input v-model="ApplyOwnGroup.groupname"></el-input>
+                        <el-form-item label="企业名称" :rules="GroupNameRules">
+                            <el-input  v-model="ApplyOwnGroup.groupname"></el-input>
                         </el-form-item>
                         <div style="margin-bottom: 30px">其余企业信息待申请成功自行修改</div>
                         <el-form-item>
@@ -521,6 +513,8 @@
                         </template>
                         <el-button  style="margin-left: 20px" type="primary" @click="GetShouKuanSituation" slot="reference">收款</el-button>
                     </el-popover>
+
+                    <el-button @click="GroupFlowexportToTxt" style="margin-left: 30px" type="primary">打印流水</el-button>
 
 
 
@@ -666,6 +660,7 @@
         mounted() {
             this.showgroups();
            this.checkToken();
+           this.GetuserFund();
         },
             data () {
             return {
@@ -690,6 +685,23 @@
                         pattern: /^(?!0+(\.0+)?$)[0-9]*\.?[0-9]+$/,
                         message: '请输入大于0的数字'
                     }
+                ],
+                //设置群组信息的验证
+                numberRules: [
+                    { required: true, message: '企业人数不能为空', trigger: 'blur' },
+                    { validator: this.checkNumber, trigger: ['blur', 'change'] }
+                ],
+                scaleRules: [
+                    { required: true, message: '企业规模不能为空', trigger: 'blur' },
+                    { validator: this.checkChinese, trigger: ['blur', 'change'] }
+                ],
+                GroupNameRules: [
+                    { required: true, message: '企业名不能为空', trigger: 'blur' },
+                    { validator: this.checkChinese, trigger: ['blur', 'change'] }
+                ],
+                directionRules: [
+                    { required: true, message: '企业方向不能为空', trigger: 'blur' },
+                    { validator: this.checkChinese, trigger: ['blur', 'change'] }
                 ],
                 value1: true,
                 //用户个人资金
@@ -736,7 +748,6 @@
                 User: {
                     password: '',
                     location: '',
-                    nickname: '',
                     PhoneNumber:'',
                 },
                 //修改群组信息
@@ -757,7 +768,6 @@
                 },
                 // 个人信息展示表格数据
                 tableData: [{
-                    nickname:"",
                     number:"",
                     address:"",
                     group: "",
@@ -777,6 +787,7 @@
                     number1:"",
                     scale1:"",
                     direction1:"",
+                    locked:"",
 
                 }, ],
                 // 消息
@@ -880,7 +891,6 @@
                            this.tableData = [
                                 {
                                     password:response.password,
-                                    nickname: response.nickname,
                                     number: response.number,
                                     address: response.address,
                                     group: response.group
@@ -945,6 +955,8 @@
                     },
                 });
             },
+
+
             changedata(){
                 var _this=this;
                 $.ajax({
@@ -954,19 +966,16 @@
                         username: _this.userId,
                         password: this.User.password,
                         location: this.User.location,
-                        nickname: this.User.nickname,
                         PhoneNumber: this.User.PhoneNumber,
 
                     },
-                    dataType: 'json',
-                    success: function (response) {
-                        if (response.success) {
-                            _this.dialogVisible=false;
-                            _this.showPersonimf();
-                        } else {
-                            alert('登录失败！');
-                        }
+                    dataType: 'text',
+                    success:  (response) => {
+                        alert(response);
+                        _this.dialogVisible=false;
+                        _this.showPersonimf();
                     },
+
                 });
           }, handleRemove(file, fileList) {
                 console.log(file, fileList);
@@ -1131,6 +1140,7 @@
                                     number1:" ",
                                     scale1:" ",
                                     direction1:" ",
+                                    locked:"",
                                 },
                             ];
                             return;
@@ -1141,6 +1151,7 @@
                                 number1:response.number,
                                 scale1:response.scale,
                                 direction1:response.direction,
+                                locked:response.Locked
                             },
                         ];
 
@@ -1567,7 +1578,8 @@
                     },
                 });
             },
-            generateTxtContent() {
+            //个人流水打印
+            generatePersonalTxtContent() {
                 const columnHeaders = ['交易对象',  '交易方式',  '交易时间',  '交易类型',  '交易金额', '交易状态'];
 
                 const formattedText = [columnHeaders.join('\t')];
@@ -1575,13 +1587,25 @@
                 this.PersonalFlow.forEach(row => {
                     formattedText.push(Object.values(row).join('\t\t'));
                 });
-
                 return formattedText.join('\n');
-            },exportToTxt() {
-                const txtContent = this.generateTxtContent();
-
+            },PersonalFlowexportToTxt() {
+                const txtContent = this.generatePersonalTxtContent();
                 const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
                 saveAs(blob, 'personal_flow_data.txt');
+            },
+            //群组流水打印
+            generateGroupTxtContent() {
+                const columnHeaders = ['交易用户','交易对象',  '交易时间',  '交易类型',  '交易金额', '交易状态'];
+                const formattedText = [columnHeaders.join('\t\t')];
+
+                this.GroupFlow.forEach(row => {
+                    formattedText.push(Object.values(row).join('\t\t'));
+                });
+                return formattedText.join('\n');
+            },GroupFlowexportToTxt() {
+                const txtContent = this.generateGroupTxtContent();
+                const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+                saveAs(blob, 'Group_flow_data.txt');
             },
             GetFuKuanSituation(){
                 var _this=this;
@@ -1811,6 +1835,21 @@
                         // 处理请求失败逻辑
                     },
                 })
+            },
+            checkNumber(rule, value, callback) {
+                if (value === '' || Number(value) > 0) {
+                    callback();
+                } else {
+                    callback(new Error('企业人数必须大于0'));
+                }
+            },
+            checkChinese(rule, value, callback) {
+                const reg = /^[\u4e00-\u9fa5]+$/;
+                if (value === '' || reg.test(value)) {
+                    callback();
+                } else {
+                    callback(new Error('只能输入汉字'));
+                }
             },
             checkToken() {// 当页面加载完成后
                         // 在Vue实例创建时尝试从localStorage获取token

@@ -39,9 +39,9 @@
             <el-form-item label="填写密码">
                 <el-input v-model="PayMent.password" style="width: 150px;"></el-input>
             </el-form-item>
-            <el-form-item v-if="PayMent.InTheNameOf === '群组'" label="是否上传报销文件">
-                <el-switch v-model="PayMent.upload"></el-switch>
-            </el-form-item>
+<!--            <el-form-item v-if="PayMent.InTheNameOf === '群组'" label="是否上传报销文件">-->
+<!--                <el-switch v-model="PayMent.upload"></el-switch>-->
+<!--            </el-form-item>-->
             <el-button @click="handleClose8">取消</el-button>
             <el-button type="primary" @click="SendPayment()">发起支付</el-button>
         </el-form>

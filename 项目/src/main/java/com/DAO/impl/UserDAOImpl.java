@@ -11,8 +11,8 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int insert(User user) {
         try {
-            String sql = "INSERT INTO tb_user(username,password,location,nickname,PhoneNumber,authority,Personalfunds,Groupfunds) VALUES (?,?,?,?,?,?,?,?)";
-            return executeUpdate(sql, user.getUsername(), user.getPassword(), user.getLocation(), user.getNickname()
+            String sql = "INSERT INTO tb_user(username,password,location,PhoneNumber,authority,Personalfunds,Groupfunds) VALUES (?,?,?,?,?,?,?)";
+            return executeUpdate(sql, user.getUsername(), user.getPassword(), user.getLocation()
                     , user.getPhoneNumber(),1,100,0);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -32,7 +32,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public User selectByname(String username) {
         try {
-            String sql = "SELECT username,password,location,nickname,PhoneNumber,groupid,Personalfunds,Groupfunds FROM tb_user WHERE username = ?";
+            String sql = "SELECT username,password,location,PhoneNumber,groupid,Personalfunds,Groupfunds,Locked FROM tb_user WHERE username = ?";
             return executeQueryBean(User.class,sql,username);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -42,8 +42,8 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int updateData(User user) {
         try {
-            String sql = "UPDATE tb_user SET password = ?,location=?,nickname=?,PhoneNumber=? WHERE username = ?";
-            return executeUpdate(sql,user.getPassword(),user.getLocation(),user.getNickname(),user.getPhoneNumber(),user.getUsername());
+            String sql = "UPDATE tb_user SET password = ?,location=?,PhoneNumber=? WHERE username = ?";
+            return executeUpdate(sql,user.getPassword(),user.getLocation(),user.getPhoneNumber(),user.getUsername());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -173,7 +173,6 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             String sql = "UPDATE tb_user SET Personalfunds=Personalfunds-? WHERE username=?";
             return executeUpdate(sql,amount,username);
         } catch (Exception e) {
-
             throw new RuntimeException(e);
         }
     }

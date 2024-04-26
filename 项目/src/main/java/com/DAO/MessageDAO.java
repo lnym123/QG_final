@@ -27,4 +27,6 @@ public interface MessageDAO {
     int SendDenyMessage(String recipient,String message);
     //发送用户拒绝企业请求
     int SendUserDenyMessage(String recipient,String groupid,String senter);
+
+    int sendUserUnBanReques(String username);
 }

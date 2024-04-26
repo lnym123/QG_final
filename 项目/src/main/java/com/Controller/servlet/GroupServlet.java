@@ -60,14 +60,27 @@ public class GroupServlet extends BaseServlet {
     }
     public void ForAdminChangeGroup (HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = req.getParameter("id");
+        resp.setCharacterEncoding("UTF-8");
+
         String number = req.getParameter("number");
+        int TrueNum = Integer.parseInt(number);
         String scale = req.getParameter("scale");
         String direction = req.getParameter("direction");
+        if(TrueNum<1){
+            resp.getWriter().write("人数错误");
+            return;}
+            else if (!ValidationHelper.isValidLocation(scale)) {
+                resp.getWriter().write("规模格式错误");
+                return;
+            } else if (!ValidationHelper.isValidLocation(direction)) {
+            resp.getWriter().write("企业方向格式错误");
+            return;}
+
         String visiable=req.getParameter("visiable");
         User user = userDao.selectByname(id);
         String groupname =user.getGroupid();
         groupDAO.ChangeGroupData(groupname,number,scale,direction,visiable);
-        resp.setCharacterEncoding("UTF-8");
+
         resp.getWriter().write("修改完毕");
     }
     public void selectAllGroupForAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -88,7 +101,7 @@ public class GroupServlet extends BaseServlet {
         String id = req.getParameter("id");
         int i=groupDAO.OperateBanGroup(id,"false");
         resp.setCharacterEncoding("UTF-8");
-        resp.getWriter().write("已封禁");
+        resp.getWriter().write("已解封");
     }
     public void LogOutGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String theAdmin = req.getParameter("TheAdmin");

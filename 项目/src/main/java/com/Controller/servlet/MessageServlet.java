@@ -69,30 +69,39 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
      }
 //发送加入群组申请
      public void SendInvitation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-
+         resp.setCharacterEncoding("UTF-8");
          String senter = req.getParameter("senter");
          String recipient= req.getParameter("recipient");
          User user1=userDao.selectByname(senter);
          String groupname1=user1.getGroupid();
-
-         User user2=userDao.selectByname(recipient);
-         String groupname2=user2.getGroupid();
-         if(groupname2!=null){
-             resp.setCharacterEncoding("UTF-8");
-             resp.getWriter().write("对方已有群组");
-             return;
+         List<User> users=userDao.selectAllUser();
+         for (User user : users) {
+             if(user.getUsername().equals(recipient)){
+                 User user2=userDao.selectByname(recipient);
+                 String groupname2=user2.getGroupid();
+                 if(groupname2!=null){
+                     resp.getWriter().write("对方已有群组");
+                     return;
+                 }
+                 int i= messageDAO.SendInvitation(senter,recipient,groupname1);
+                 resp.getWriter().write("成功发送邀请");
+                 return;
+             }
          }
-         int i= messageDAO.SendInvitation(senter,recipient,groupname1);
-         resp.setCharacterEncoding("UTF-8");
-         resp.getWriter().write("成功发送邀请");
+         resp.getWriter().write("对象不存在");
 
      }
      //申请个人群组
     public  void ForApplyOwnGroup (HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setCharacterEncoding("UTF-8");
         String theSenter = req.getParameter("TheSenter");
         String theGroupId = req.getParameter("TheGroupId");
+        if (!ValidationHelper.isValidLocation(theGroupId)) {
+            resp.getWriter().write("群组名称格式错误,应为汉字");
+            return;
+        }
         int i= messageDAO.ApplyOwnGroup(theSenter,theGroupId);
-        resp.setCharacterEncoding("UTF-8");
+
         resp.getWriter().write("申请已发送");
     }
     //获取网站管理员的消息
@@ -136,7 +145,12 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
        resp.setCharacterEncoding("UTF-8");
        resp.getWriter().write("已经拒绝");
    }
-
+  public void sendUnBanReques(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      String username = req.getParameter("username");
+      messageDAO.sendUserUnBanReques(username);
+      resp.setCharacterEncoding("UTF-8");
+      resp.getWriter().write("已经发送");
+  }
 
    }
 

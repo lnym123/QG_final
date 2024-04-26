@@ -12,7 +12,6 @@ public class User {
 
     private String location;
 
-    private String nickname;
 
     private String PhoneNumber;
 
@@ -51,11 +50,10 @@ public class User {
 
     private String Locked;
 
-    public User(String username, String password, String location, String nickname, String phoneNumber) {
+    public User(String username, String password, String location,  String phoneNumber) {
         this.username = username;
         this.password = password;
         this.location = location;
-        this.nickname = nickname;
         PhoneNumber = phoneNumber;
     }
 
@@ -75,7 +73,6 @@ public class User {
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", location='" + location + '\'' +
-                ", nickname='" + nickname + '\'' +
                 ", PhoneNumber='" + PhoneNumber + '\'' +
                 ", authority=" + authority +
                 ", groupid='" + groupid + '\'' +
@@ -142,14 +139,6 @@ public class User {
 
     public void setLocation(String location) {
         this.location = location;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
     }
 
     public String getPhoneNumber() {
