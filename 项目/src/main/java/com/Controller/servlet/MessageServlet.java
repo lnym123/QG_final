@@ -72,9 +72,17 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
 
          String senter = req.getParameter("senter");
          String recipient= req.getParameter("recipient");
-         User user=userDao.selectByname(senter);
-         String groupname=user.getGroupid();
-         int i= messageDAO.SendInvitation(senter,recipient,groupname);
+         User user1=userDao.selectByname(senter);
+         String groupname1=user1.getGroupid();
+
+         User user2=userDao.selectByname(recipient);
+         String groupname2=user2.getGroupid();
+         if(groupname2!=null){
+             resp.setCharacterEncoding("UTF-8");
+             resp.getWriter().write("对方已有群组");
+             return;
+         }
+         int i= messageDAO.SendInvitation(senter,recipient,groupname1);
          resp.setCharacterEncoding("UTF-8");
          resp.getWriter().write("成功发送邀请");
 

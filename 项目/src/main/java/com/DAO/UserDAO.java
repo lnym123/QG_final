@@ -35,8 +35,13 @@ public interface UserDAO {
     int ForLogOutGroup(String groupid,String username,int amount);
 
     User CheckResetPasswordAccount(String username,String PhoneNumber,String location);
-
+   //重置密码
     int ResetPassword(String username,String password);
+    //交易发起，扣除用户资金
+    int FreezePersonalFund(String username,int amount);
+
+    int FreezeGroupFund(String username,int amount);
+
 
 
 }

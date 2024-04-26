@@ -28,8 +28,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -42,10 +45,10 @@ public class UserServlet  extends BaseServlet {
     private final UserDAO userDao = new UserDAOImpl();
     MessageDAO messageDAO= new MessageDAOimpl();
     GroupDAO groupDAO=new GroupDAOimpl();
-    private static final String UPLOAD_DIR = "src/main/webapp/images"; // 替换为实际的上传目录路径
+    private static final String UPLOAD_DIR = "src/main/webapp/images";
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
-    private static final String SECRET_KEY = "MykEY"; // 替换为你的密钥
-    private static final long EXPIRATION_TIME = 3600000; // JWT有效期，这里是1小时（毫秒）
+    private static final String SECRET_KEY = "MykEY";
+    private static final long EXPIRATION_TIME = 3600000; // JWT有效期，这里是1小时
 
     public void FileUpload(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(req);
@@ -120,50 +123,58 @@ public class UserServlet  extends BaseServlet {
 
     }
 
-    public void ForLogin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setCharacterEncoding("UTF-8");
-        String username = req.getParameter("username");
-        String password = req.getParameter("password");
-        List<User> users = userDao.selectAll(username, password);
-        User matchedUser = users.stream().findFirst().orElse(null);
-        resp.setContentType("application/json;charset=utf-8");
-        PrintWriter out = resp.getWriter();
-        // 验证用户名和密码（这里仅作简单示意，实际应使用更安全的方法）
-        if (!matchedUser.getUsername().equals("游客")) { // 自定义的验证方法
-            // 验证通过，生成JWT
-            String token = Jwts.builder()
-                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
-                    .setSubject(username) // 设置JWT的主题，可以存放用户名
-                    .claim("avatar_url", matchedUser.getAvatar_url())
-                    .claim("authority", matchedUser.getAuthority())
-                    .claim("PersonalFunds",matchedUser.getPersonalfunds())
-                    .claim("username", username)
-                    .claim("password", password)
+        public void ForLogin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            resp.setCharacterEncoding("UTF-8");
+            String username = req.getParameter("username");
+            String password = req.getParameter("password");
+            List<User> users = userDao.selectAll(username, password);
+            User matchedUser = users.stream().findFirst().orElse(null);
 
-                    .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
+            if (matchedUser != null && matchedUser.getLocked().equals("true")) {
+                String jsonString = JSON.toJSONString("账号已被封禁");
+                resp.setStatus(HttpServletResponse.SC_FORBIDDEN); // 设置状态码为403 Forbidden
+                resp.setContentType("application/json;charset=utf-8");
+                resp.getWriter().write(jsonString);
+                return;
+            }
+            resp.setContentType("application/json;charset=utf-8");
+            PrintWriter out = resp.getWriter();
+            // 验证用户名和密码（这里仅作简单示意，实际应使用更安全的方法）
+            if (!matchedUser.getUsername().equals("游客")) { // 自定义的验证方法
+                // 验证通过，生成JWT
+                String token = Jwts.builder()
+                        .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
+                        .setSubject(username) // 设置JWT的主题，可以存放用户名
+                        .claim("avatar_url", matchedUser.getAvatar_url())
+                        .claim("authority", matchedUser.getAuthority())
+                        .claim("PersonalFunds",matchedUser.getPersonalfunds())
+                        .claim("username", username)
+                        .claim("password", password)
 
-                    .compact();
-            // 将JWT发送回客户端（例如放入响应体或Cookie中）
+                        .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
 
-            out.println("{\"token\":\"" + token + "\"}");
-        } else if(Objects.equals(matchedUser.getUsername(), "游客")) {
-            String token = Jwts.builder()
-                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
-                    .claim("username", "null")
-                    .claim("password", password)
-                    .claim("authority", matchedUser.getAuthority())
-                    .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
-                    .compact();
+                        .compact();
+                // 将JWT发送回客户端（例如放入响应体或Cookie中）
 
-            out.println("{\"token\":\"" + token + "\"}");
+                out.println("{\"token\":\"" + token + "\"}");
+            } else if(Objects.equals(matchedUser.getUsername(), "游客")) {
+                String token = Jwts.builder()
+                        .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
+                        .claim("username", "null")
+                        .claim("password", password)
+                        .claim("authority", matchedUser.getAuthority())
+                        .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
+                        .compact();
+
+                out.println("{\"token\":\"" + token + "\"}");
 
 
-        }else{
-            // 用户名或密码错误处理...
-            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            resp.getWriter().write("Unauthorized");
+            }else{
+                // 用户名或密码错误处理...
+                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                resp.getWriter().write("Unauthorized");
+            }
         }
-    }
 
     public void ForRegister(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String username = req.getParameter("username");
@@ -207,6 +218,14 @@ public class UserServlet  extends BaseServlet {
         String senter = req.getParameter("senter");
         String groupid = req.getParameter("groupid");
         String message1 = req.getParameter("sendmessage");
+        User user=userDao.selectByname(senter);
+        String groupname=user.getGroupid();
+        if(groupname!=null){
+            String jsonString= JSON.toJSONString("已处于一个群组，请先退出");
+            resp.setContentType("text/json;charset=utf-8");
+            resp.getWriter().write(jsonString);
+            return;
+        }
         List<Group> groups=groupDAO.selectAllForAdmin();
         for (Group group : groups) {
             if(Objects.equals(group.getGroupname(), groupid)){
@@ -325,9 +344,29 @@ public class UserServlet  extends BaseServlet {
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已修改");
     }
+    public void  GetuserFund(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String username = req.getParameter("username");
+        User user = userDao.selectByname(username);
+        String jsonString= JSON.toJSONString(user);
+        resp.setContentType("text/json;charset=utf-8");
+        resp.getWriter().write(jsonString);
 
+    }
 
+    public static String hashPasswordSHA256(String plainPassword) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(plainPassword.getBytes());
+        byte[] digest = md.digest();
 
+        BigInteger no = new BigInteger(1, digest);
+        String hashtext = no.toString(16);
+
+        while (hashtext.length() < 64) {
+            hashtext = "0" + hashtext;
+        }
+
+        return hashtext;
+    }
 
     private void saveFileToDatabase(String filePath, String contentType, long contentLength, String userId) throws SQLException {
         Connection conn = null;

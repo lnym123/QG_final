@@ -11,9 +11,9 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int insert(User user) {
         try {
-            String sql = "INSERT INTO tb_user(username,password,location,nickname,PhoneNumber,authority) VALUES (?,?,?,?,?,?)";
+            String sql = "INSERT INTO tb_user(username,password,location,nickname,PhoneNumber,authority,Personalfunds,Groupfunds) VALUES (?,?,?,?,?,?,?,?)";
             return executeUpdate(sql, user.getUsername(), user.getPassword(), user.getLocation(), user.getNickname()
-                    , user.getPhoneNumber(),1);
+                    , user.getPhoneNumber(),1,100,0);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -32,7 +32,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public User selectByname(String username) {
         try {
-            String sql = "SELECT username,password,location,nickname,PhoneNumber,groupid FROM tb_user WHERE username = ?";
+            String sql = "SELECT username,password,location,nickname,PhoneNumber,groupid,Personalfunds,Groupfunds FROM tb_user WHERE username = ?";
             return executeQueryBean(User.class,sql,username);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -82,7 +82,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public List<User> selectAllUser() {
         try {
-            String sql = "SELECT username,groupid,Groupfunds FROM tb_user";
+            String sql = "SELECT username,groupid,Personalfunds,Groupfunds FROM tb_user";
             return executeQuery(User.class,sql);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -163,7 +163,27 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             String sql = "UPDATE tb_user SET password=? WHERE username=?";
             return executeUpdate(sql,password,username);
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    @Override
+    public int FreezePersonalFund(String username, int amount) {
+        try {
+            String sql = "UPDATE tb_user SET Personalfunds=Personalfunds-? WHERE username=?";
+            return executeUpdate(sql,amount,username);
+        } catch (Exception e) {
+
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int FreezeGroupFund(String username, int amount) {
+        try {
+            String sql = "UPDATE tb_user SET Groupfunds=Groupfunds-? WHERE username=?";
+            return executeUpdate(sql,amount,username);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

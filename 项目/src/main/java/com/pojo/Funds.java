@@ -11,6 +11,20 @@ public class Funds {
     String mode;
     String groupname;
 
+    public Funds() {
+    }
+
+    public Funds(String username, String transaction_object, String transaction_time, String type, String amount, String transaction_status, String mode, String groupname) {
+        this.username = username;
+        this.transaction_object = transaction_object;
+        this.transaction_time = transaction_time;
+        this.type = type;
+        this.amount = amount;
+        this.transaction_status = transaction_status;
+        this.mode = mode;
+        this.groupname = groupname;
+    }
+
     @Override
     public String toString() {
         return "Funds{" +

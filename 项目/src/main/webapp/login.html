@@ -195,25 +195,32 @@
                     method: 'POST',
                     data: this.loginForm,
                     dataType: 'json',
-                    success: (response) => {
-                        var jwtToken = response.token;
-                        localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
-                        // 登录成功后的操作，如跳转页面等
-                        _this.checkToken();
-                        if(_this.userId==='admin'){
-
-                            window.location.href = "adminpage.html";
-                            return;
-                        }
-                        window.location.href = "main page2.html";
+                    statusCode: {
+                        200: function(response) {
+                            var jwtToken = response.token;
+                            localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
+                            // 登录成功后的操作，如跳转页面等
+                            _this.checkToken();
+                            if (_this.userId === 'admin') {
+                                window.location.href = "adminpage.html";
+                                return;
+                            }
+                            window.location.href = "main page2.html";
+                        },
+                        403: function(response) {
+                            // 账号被封禁处理逻辑
+                            alert("您的账号已被封禁，无法登录");
+                            return; // 添加return以避免继续执行
+                        },
                     },
-                    error: (xhr, status, error) => {
-                        alert("登录失败");
+                    error: function(xhr, status, error) {
+                        // 通用错误处理逻辑
+                        alert("登录失败: " + status);
                     }
-                })
+                });
+
             },
             handleTouristLogin() {
-
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/user/ForLogin',
                     method: 'POST',

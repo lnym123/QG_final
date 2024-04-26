@@ -13,4 +13,6 @@ public interface FundDAO {
     int Allocatefunds(String id,int amount1,int amount2,String groupid);
 
     List<Funds> SelectGroupFunds(String groupid);
+
+    int ShouKuanFund(Funds funds);
 }

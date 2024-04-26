@@ -122,6 +122,11 @@
                         label="用户名"
                         width="180">
                 </el-table-column>
+                <el-table-column
+                        prop="amount"
+                        label="余额"
+                        width="180">
+                </el-table-column>
 
                 <el-table-column label="操作" width="180">
                     <template slot-scope="scope">
@@ -137,6 +142,11 @@
                 <el-table-column
                         prop="name"
                         label="企业名"
+                        width="180">
+                </el-table-column>
+                <el-table-column
+                        prop="amount"
+                        label="余额"
                         width="180">
                 </el-table-column>
 
@@ -171,9 +181,11 @@
                 userId: "",
                 PersonData: [{
                     name: "",
+                    amount:"",
                 }],
                 GroupData: [{
                     name: "",
+                    amount:"",
                 }],
                 //消息
                 gridData: [{
@@ -223,6 +235,7 @@
                     success: (response) => {
                         const Tdata = response.map(group => ({
                             name: group.username,
+                            amount:group.personalfunds
                         }));
                         this.PersonData = Tdata;
                     },
@@ -234,14 +247,15 @@
             }, selectAllGroup() {
                 var _this = this;
                 $.ajax({
-                    url: 'http://localhost:8080/jwt_test/group/selectAllGroupForAdmin',
+                    url: 'http://localhost:8080/jwt_test/funds/GetGroupBalance',
                     method: 'POST',
                     dataType: 'json',
                     success: (response) => {
-                        const Tdata = response.map(group => ({
-                            name: group.groupname,
+                        const tableData1 = response.map(item => ({
+                            name: item.groupname,
+                            amount: item.number
                         }));
-                        this.GroupData = Tdata;
+                        this.GroupData = tableData1;
                     },
                     error: (xhr, status, error) => {
                         console.error('请求失败:', error);

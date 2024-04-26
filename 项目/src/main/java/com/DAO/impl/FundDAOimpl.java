@@ -48,4 +48,15 @@ public class FundDAOimpl extends BaseDAO implements FundDAO {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public int ShouKuanFund(Funds funds) {
+        try {
+            String sql = "INSERT INTO tb_funds(username,mode,groupname,transaction_object,transaction_time,amount,transaction_status,type) VALUES (?,?,?,?,?,?,?,?)";
+            return executeUpdate(sql, funds.getUsername(),funds.getMode(),funds.getGroupname(),funds.getTransaction_object(),funds.getTransaction_time()
+            ,funds.getAmount(),funds.getTransaction_status(),funds.getType());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
