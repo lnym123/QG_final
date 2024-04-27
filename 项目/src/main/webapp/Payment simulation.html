@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment simulation</title>
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+    <script src="lib/vue.js"></script>
+    <script src="element-ui/lib/index.js"></script>
+    <script src="lib/jquery-3.7.1.min.js"></script>
+    <script src="lib/axios-0.18.0.js"></script>
+
+</head>
+<body>
+<div id="app">
+    <el-dialog
+            title="发起支付"
+            :visible.sync="dialogVisible8"
+            width="30%"
+            :before-close="handleDialogClose">
+        <el-form ref="form" :model="PayMent" label-width="80px">
+            <template>
+                <el-form-item label="支付名义">
+                    <el-radio-group v-model="PayMent.InTheNameOf">
+                        <el-radio label="群组">群组</el-radio>
+                        <el-radio label="个人">个人</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+            </template>
+            <el-form-item label="支付对象">
+                <el-input v-model="PayMent.object" style="width: 150px;"></el-input>
+            </el-form-item>
+            <el-form-item label="支付金额" :error="payAmountError">
+                <el-input
+                        v-model="PayMent.number"
+                        @input="validatePayAmount"
+                        style="width: 150px">
+                </el-input>
+            </el-form-item>
+            <el-form-item label="填写密码">
+                <el-input v-model="PayMent.password" style="width: 150px;"></el-input>
+            </el-form-item>
+<!--            <el-form-item v-if="PayMent.InTheNameOf === '群组'" label="是否上传报销文件">-->
+<!--                <el-switch v-model="PayMent.upload"></el-switch>-->
+<!--            </el-form-item>-->
+            <el-button @click="handleClose8">取消</el-button>
+            <el-button type="primary" @click="SendPayment()">发起支付</el-button>
+        </el-form>
+    </el-dialog>
+</div>
+</body>
+<script>
+    new Vue({
+        el: '#app',
+        mounted() {
+            this.checkToken();
+        },
+        data() {
+            return {
+                userId:"",
+                userFund:"",
+                dialogVisible8:"true",
+                payAmountError: "",
+                //支付页面
+                PayMent:{
+                    InTheNameOf:"个人",
+                    object:"",
+                    number:"",
+                    password:"",
+                    upload:"true",
+                },
+            }
+        },methods:{
+            handleClose8(done){
+                window.location.href ="main page2.html";
+            },
+            handleDialogClose(done) {
+                this.handleClose8(); // 调用已有的 handleClose8 方法
+                done(); // 必须调用 done 函数以关闭对话框
+            },
+            //校验输入数字
+            validatePayAmount(value) {
+                const greaterThanZeroRegex = /^(?!0+(?:\.0+)?$)(?:[1-9]\d*|0)?(?:\.\d+)?$/;
+                if (!greaterThanZeroRegex.test(value)) {
+                    this.payAmountError = "请输入大于0的数字";
+                } else {
+                    this.payAmountError = ""; // 清除错误信息
+                }
+            },
+            SendPayment(){
+                if(this.PayMent.InTheNameOf==='个人'&&this.PayMent.number>this.userFund){
+                    alert("个人余额不足");
+                }
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/transaction/SendTransaction',
+                    method: 'POST',
+                    data: {
+                        username: _this.userId,
+                        object:_this.PayMent.object,
+                        password:_this.PayMent.password,
+                        number:Number(_this.PayMent.number),
+                        InTheNameOf:_this.PayMent.InTheNameOf,
+                        upload:_this.PayMent.upload
+                    },
+                    dataType:'text',
+                    success: function (response) {
+                        alert(response);
+                    },
+                });
+
+            },
+            checkToken() {// 当页面加载完成后
+                // 在Vue实例创建时尝试从localStorage获取token
+                this.token = localStorage.getItem('jwtToken');
+                if (this.token) {
+                    try {
+                        // 分割JWT字符串为三部分: header.payload.signature
+                        const [header, payload, signature] = this.token.split('.');
+                        // Base64解码负载部分
+                        const decodedPayload = window.atob(payload);
+                        // 解析负载部分的JSON字符串
+                        const tokenData = JSON.parse(decodedPayload);
+                        // 从token数据中提取username并赋值给userId
+                        if (tokenData && tokenData.username) {
+                            console.log("用户名：", tokenData.username);
+                            this.userId = tokenData.username;
+                            this.userFund = tokenData.PersonalFunds;
+                            if (this.Authority === 0) {
+                                this.userId = "游客"
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error('解析token时出错:', error);
+                    }
+                } else {
+                    console.log('localStorage中没有找到token');
+                }
+
+            }
+        },
+    })
+        </script>
+</html>
