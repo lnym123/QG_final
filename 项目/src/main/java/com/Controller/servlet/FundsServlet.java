@@ -65,6 +65,22 @@ public class FundsServlet extends BaseServlet {
             // 将更新后的余额存回 Map
             groupBalances.put(groupName, updatedGroupBalance);
         }
+        List<Group> groups=groupDAO.selectAll();
+        for (Group group : groups) {
+            String groupName = group.getGroupname();
+            // 跳过空群组ID
+            if (groupName == null || groupName.isEmpty()) {
+                continue;
+            }
+            double userBalance = group.getPublicfunds();
+            // 如果群组已存在于 Map 中，取出当前累计余额
+            double currentGroupBalance = groupBalances.getOrDefault(groupName, 0.0);
+            // 更新群组累计余额
+            double updatedGroupBalance = currentGroupBalance + userBalance;
+            // 将更新后的余额存回 Map
+            groupBalances.put(groupName, updatedGroupBalance);
+        }
+
 
         // 将群组余额 Map 转换为数组对象列表
         List<Map<String, Object>> groupBalanceList = new ArrayList<>();
@@ -97,10 +113,16 @@ public class FundsServlet extends BaseServlet {
             resp.setContentType("text/json;charset=utf-8");
             resp.getWriter().write(jsonString);
         }
-        public void Allocatefunds(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+        public void Allocatefunds1(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+            resp.setCharacterEncoding("UTF-8");
             String theuser = request.getParameter("Theuser");
-            int Useramount = Integer.parseInt(request.getParameter("Useramount"));
-            int pubilicAmount = Integer.parseInt(request.getParameter("pubilicAmount"));
+            int amount = Integer.parseInt(request.getParameter("Theamount"));
+            if(amount<1){
+                resp.getWriter().write("请输入大于0的数字");
+                return;
+            }
+            int Useramount = Integer.parseInt(request.getParameter("Useramount"))+amount;
+            int pubilicAmount = Integer.parseInt(request.getParameter("pubilicAmount"))-amount;
             if(pubilicAmount<0||Useramount<0){
                 resp.setCharacterEncoding("UTF-8");
                 resp.getWriter().write("数额过大请重新填写");
@@ -109,9 +131,28 @@ public class FundsServlet extends BaseServlet {
             User user =userDAO.selectByname(theuser);
             String groupname =user.getGroupid();
             fundDAO.Allocatefunds(theuser,Useramount,pubilicAmount,groupname);
-            resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write("操作完毕");
         }
+    public void Allocatefunds2(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setCharacterEncoding("UTF-8");
+        String theuser = request.getParameter("Theuser");
+        int amount = Integer.parseInt(request.getParameter("Theamount"));
+        if(amount<1){
+            resp.getWriter().write("请输入大于0的数字");
+            return;
+        }
+        int Useramount =amount-Integer.parseInt(request.getParameter("Useramount"));
+        int pubilicAmount = Integer.parseInt(request.getParameter("pubilicAmount"));
+        if(pubilicAmount<0||Useramount<0){
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write("数额过大请重新填写");
+            return;
+        }
+        User user =userDAO.selectByname(theuser);
+        String groupname =user.getGroupid();
+        fundDAO.Allocatefunds(theuser,Useramount,pubilicAmount,groupname);
+        resp.getWriter().write("操作完毕");
+    }
         public void ShowGroupFlow(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
             String username = request.getParameter("username");
             User user =userDAO.selectByname(username);

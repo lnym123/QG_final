@@ -55,8 +55,18 @@ public class GroupServlet extends BaseServlet {
         String jsonString= JSON.toJSONString(group);
         resp.getWriter().write(jsonString);
 
+    }
+    class ErrorResponse {
+        private String errorMessage;
 
+        public ErrorResponse(String errorMessage) {
+            this.errorMessage = errorMessage;
+        }
 
+        // Getter for errorMessage
+        public String getErrorMessage() {
+            return errorMessage;
+        }
     }
     public void ForAdminChangeGroup (HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = req.getParameter("id");
@@ -109,8 +119,7 @@ public class GroupServlet extends BaseServlet {
         User user = userDao.selectByname(theAdmin);
         String groupname =user.getGroupid();
         userDao.ForLogOutGroup(groupname,theAdmin,PublicFunds);
-
-
-
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write("已注销");
     }
 }

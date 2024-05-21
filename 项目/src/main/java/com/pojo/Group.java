@@ -7,6 +7,15 @@ public class Group {
     private String scale;
     private String direction;
     private int publicfunds;
+    private String Locked;
+
+    public String getLocked() {
+        return Locked;
+    }
+
+    public void setLocked(String locked) {
+        Locked = locked;
+    }
 
     @Override
     public String toString() {
@@ -17,6 +26,7 @@ public class Group {
                 ", scale='" + scale + '\'' +
                 ", direction='" + direction + '\'' +
                 ", publicfunds=" + publicfunds +
+                ", Locked='" + Locked + '\'' +
                 '}';
     }
 

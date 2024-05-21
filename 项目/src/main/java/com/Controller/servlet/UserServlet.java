@@ -143,7 +143,7 @@ public class UserServlet  extends BaseServlet {
         resp.setContentType("application/json;charset=utf-8");
         PrintWriter out = resp.getWriter();
         // 验证用户名和密码（这里仅作简单示意，实际应使用更安全的方法）
-        if (!matchedUser.getUsername().equals("游客")) { // 自定义的验证方法
+        if (!matchedUser.getUsername().equals("youke")) { // 自定义的验证方法
             // 验证通过，生成JWT
             String token = Jwts.builder()
                     .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
@@ -160,7 +160,7 @@ public class UserServlet  extends BaseServlet {
             // 将JWT发送回客户端（例如放入响应体或Cookie中）
 
             out.println("{\"token\":\"" + token + "\"}");
-        } else if (Objects.equals(matchedUser.getUsername(), "游客")) {
+        } else if (Objects.equals(matchedUser.getUsername(), "youke")) {
             String token = Jwts.builder()
                     .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
                     .claim("username", "null")
@@ -194,6 +194,11 @@ public class UserServlet  extends BaseServlet {
             resp.getWriter().write("地址格式错误");
             return;
         }
+        if (!ValidationHelper.isValidUsername(username)) {
+            resp.getWriter().write("用户名格式错误");
+            return;
+        }
+
 
         List<User> users = userDao.selectAllUser();
         for (User user : users) {

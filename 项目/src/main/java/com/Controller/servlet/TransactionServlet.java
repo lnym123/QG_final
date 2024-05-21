@@ -42,7 +42,6 @@ public class TransactionServlet extends BaseServlet {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String formattedTime = currentTime.format(formatter);  // 将当前时间格式化为字符串
         resp.setCharacterEncoding("UTF-8");
-        String upload = null;   //是否上传
         String username = request.getParameter("username");//发起者
         String object = request.getParameter("object");//收款者
         String password = request.getParameter("password");//密码
@@ -69,7 +68,6 @@ public class TransactionServlet extends BaseServlet {
         }
         for (String name : names) {
             if(name.equals(object)){
-
                 String inTheNameOf = request.getParameter("InTheNameOf");
                 if(inTheNameOf.equals("个人")){//事务保证发送和冻结资金同时发生
                     Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",null,"个人");
@@ -85,10 +83,11 @@ public class TransactionServlet extends BaseServlet {
                     } catch (Exception e) {
                         try {
                             connection.rollback();
+                            resp.getWriter().write("发生错误，请重新发送");
+                            return;
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
                         }
-                        throw new RuntimeException(e);
                     }finally {
                         JDBCUtilV2.release();
                     }
@@ -100,7 +99,6 @@ public class TransactionServlet extends BaseServlet {
                         resp.getWriter().write("用户不在群组之中");
                         return;
                     }
-                    upload = request.getParameter("upload");
                     int GroupFunds = user.getGroupfunds();
                     if (GroupFunds < number) {
                         resp.getWriter().write("用户在群组内资金不足");
@@ -119,10 +117,11 @@ public class TransactionServlet extends BaseServlet {
                     } catch (Exception e) {
                         try {
                             connection.rollback();
+                            resp.getWriter().write("发生错误，请重新发送");
+                            return;
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
                         }
-                        throw new RuntimeException(e);
                     }finally {
                         JDBCUtilV2.release();
                     }
@@ -157,27 +156,49 @@ public class TransactionServlet extends BaseServlet {
         resp.getWriter().write(jsonString);
     }
     public void UserAcceptShouKuan(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
-        String thePayer = request.getParameter("ThePayer");
+        resp.setCharacterEncoding("UTF-8");
+        String thePayer = request.getParameter("ThePayer");   //名义是群组，则为群组名
+        System.out.println("付款人"+thePayer);
         String theAmount = request.getParameter("TheAmount");
+        int TheAmount=Integer.parseInt(theAmount);
         String theTime = request.getParameter("TheTime");
-        String therecipient = request.getParameter("Therecipient");
+        String therecipient = request.getParameter("Therecipient"); //为user本人
+        String TheNominal=request.getParameter("TheNominal");
+        List<Transaction> transactions=transactionDAO.GetShouKuanTransactionS(therecipient);//未转换前的收款单子。
         Connection connection= null;
         try {
-            connection= JDBCUtilV2.getConnection();
+            connection = JDBCUtilV2.getConnection();
             connection.setAutoCommit(false);
             //操作
+
+        if(TheNominal.equals("个人")) {
             transactionDAO.GetShouKuanRecord(thePayer,theAmount,theTime,therecipient);
-            //写入流水
-            Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","个人",null);
+            //写入收款方流水
+            Funds funds1 = new Funds(therecipient, thePayer, theTime, "收入", theAmount, "已收款", "个人", null);
             //付款方的流水
-            Funds funds2=new Funds(thePayer,therecipient,theTime,"支出",theAmount,"已收款","个人",null);
+            Funds funds2 = new Funds(thePayer, therecipient, theTime, "支出", theAmount, "已收款", "个人", null);
             fundDAO.ShouKuanFund(funds1);
             fundDAO.ShouKuanFund(funds2);
+        }else{
+            //名义是群组，付款人则是群组
+            //修改的订单
+            for (Transaction transaction : transactions) {//获得已群组名义支付的正在的payer
+                if(transaction.getAmount()==TheAmount&&transaction.getTransaction_time().equals(theTime)){
+                    transactionDAO.GetShouKuanRecord(transaction.getPayer(), theAmount,theTime,therecipient);
+                    //写入流水
+                    Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","个人",null);
+                    //付款方的流水
+                    Funds funds2=new Funds(transaction.getPayer(),therecipient,theTime,"支出",theAmount,"已收款","群组",transaction.getGroupname());
+                    fundDAO.ShouKuanFund(funds1);
+                    fundDAO.ShouKuanFund(funds2);
+                }}
+        }
             //提交
             connection.commit();
         } catch (Exception e) {
             try {
                 connection.rollback();
+                resp.getWriter().write("发生错误，请重新操作");
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -185,10 +206,11 @@ public class TransactionServlet extends BaseServlet {
         }finally {
             JDBCUtilV2.release();
         }
-        resp.setCharacterEncoding("UTF-8");
+
         resp.getWriter().write("已收款");
     }
     public void UserDenyShouKuan(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setCharacterEncoding("UTF-8");
         String thePayer = request.getParameter("ThePayer");
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
@@ -204,18 +226,22 @@ public class TransactionServlet extends BaseServlet {
         } catch (Exception e) {
             try {
                 connection.rollback();
+
+                resp.getWriter().write("发生错误，请重新操作");
+                return;
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
-            throw new RuntimeException(e);
+
         }finally {
             JDBCUtilV2.release();
         }
 
-        resp.setCharacterEncoding("UTF-8");
+
         resp.getWriter().write("已拒绝");
     }
     public void SendFuKuanAgain(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setCharacterEncoding("UTF-8");
         String thePayer = request.getParameter("ThePayer");
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
@@ -231,14 +257,16 @@ public class TransactionServlet extends BaseServlet {
         } catch (Exception e) {
             try {
                 connection.rollback();
+                resp.getWriter().write("发生错误，请重新操作");
+                return;
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
-            throw new RuntimeException(e);
+
         }finally {
             JDBCUtilV2.release();
         }
-        resp.setCharacterEncoding("UTF-8");
+
         resp.getWriter().write("再次发送成功");
     }
 
@@ -281,7 +309,7 @@ public class TransactionServlet extends BaseServlet {
        resp.getWriter().write("已删除");
 
    }
-       public void  GetGroupShouKuanSituation(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+   public void  GetGroupShouKuanSituation(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
        String id = request.getParameter("id");
        User user=userDAO.selectByname(id);
        String groupname= user.getGroupid();
@@ -297,6 +325,7 @@ public class TransactionServlet extends BaseServlet {
    }
 
    public void GroupShouKuanaccept(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+       resp.setCharacterEncoding("UTF-8");
        String thePayer = request.getParameter("ThePayer");
        String theAmount = request.getParameter("TheAmount");
        int TheAmount=Integer.parseInt(theAmount);
@@ -311,8 +340,9 @@ public class TransactionServlet extends BaseServlet {
            connection= JDBCUtilV2.getConnection();
            connection.setAutoCommit(false);
            //操作
-           transactionDAO.GetGroupShouKuanRecord(thePayer,theAmount,theTime,groupname);//入账，修改订单信息
+
            if(TheNominal.equals("个人")){
+               transactionDAO.GetGroupShouKuanRecord(thePayer,theAmount,theTime,groupname);//入账，修改订单信息
                //写入收款方流水
                Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","群组",groupname);
                fundDAO.ShouKuanFund(funds1);
@@ -327,6 +357,7 @@ public class TransactionServlet extends BaseServlet {
                List<Transaction> transactions=transactionDAO.GetShouKuanTransactionS(groupname);//得到未转换前的群组
                for (Transaction transaction : transactions) {//获得已群组名义支付的正在的payer
                    if(transaction.getAmount()==TheAmount&&transaction.getTransaction_time().equals(theTime)){
+                       transactionDAO.GetGroupShouKuanRecord(transaction.getPayer(),theAmount,theTime,groupname);//入账，修改订单信息
                        Funds funds2 = new Funds(transaction.getPayer(),groupname, theTime, "支出", theAmount, "已收款", "群组",transaction.getGroupname());
                        fundDAO.ShouKuanFund(funds2);
                    }}
@@ -337,16 +368,16 @@ public class TransactionServlet extends BaseServlet {
        } catch (Exception e) {
            try {
                connection.rollback();
+               resp.getWriter().write("发生错误，请重新操作");
+               return;
            } catch (Exception ex) {
                throw new RuntimeException(ex);
            }
-           throw new RuntimeException(e);
        }finally {
            JDBCUtilV2.release();
        }
 
 
-       resp.setCharacterEncoding("UTF-8");
        resp.getWriter().write("已收款");
    }
 }

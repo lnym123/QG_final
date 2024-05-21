@@ -21,7 +21,7 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
     @Override
     public List<Group> selectAll() {
         try {
-            String sql = "SELECT groupname,number,scale,direction FROM tb_group WHERE visiable = ?";
+            String sql = "SELECT groupname,number,scale,direction,publicfunds FROM tb_group WHERE visiable = ?";
             return executeQuery(Group.class, sql, "true");
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -127,8 +127,8 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
     @Override
     public int AgreeCreateGroup(String id) {
         try {
-            String sql = "INSERT INTO tb_group(groupname,number) VALUES (?,?)";
-            return executeUpdate(sql,id,1);
+            String sql = "INSERT INTO tb_group(groupname,number,publicfunds) VALUES (?,?,?)";
+            return executeUpdate(sql,id,1,0);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

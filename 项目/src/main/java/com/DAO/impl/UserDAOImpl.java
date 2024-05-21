@@ -11,9 +11,9 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int insert(User user) {
         try {
-            String sql = "INSERT INTO tb_user(username,password,location,PhoneNumber,authority,Personalfunds,Groupfunds) VALUES (?,?,?,?,?,?,?)";
+            String sql = "INSERT INTO tb_user(username,password,location,PhoneNumber,authority,Personalfunds,Groupfunds,Locked) VALUES (?,?,?,?,?,?,?,?)";
             return executeUpdate(sql, user.getUsername(), user.getPassword(), user.getLocation()
-                    , user.getPhoneNumber(),1,100,0);
+                    , user.getPhoneNumber(),1,1000,0,"false");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -32,7 +32,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public User selectByname(String username) {
         try {
-            String sql = "SELECT username,password,location,PhoneNumber,groupid,Personalfunds,Groupfunds,Locked FROM tb_user WHERE username = ?";
+            String sql = "SELECT username,password,location,PhoneNumber,authority,groupid,Personalfunds,Groupfunds,Locked FROM tb_user WHERE username = ?";
             return executeQueryBean(User.class,sql,username);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -62,8 +62,8 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     @Override
     public int ExitGroup(String username) {
         try {
-            String sql = "UPDATE tb_user SET groupid = NULL WHERE username = ?";
-            return executeUpdate(sql,username);
+            String sql = "UPDATE tb_user SET groupid = NULL,authority=? WHERE username = ?";
+            return executeUpdate(sql,1,username);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

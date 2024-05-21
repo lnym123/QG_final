@@ -18,6 +18,12 @@ public class ValidationHelper {
         Matcher matcher = pattern.matcher(location);
         return matcher.matches();
     }
+    public static boolean isValidUsername(String Username) {
+        String locationPattern = "^[a-zA-Z]+$";
+        Pattern pattern = Pattern.compile(locationPattern);
+        Matcher matcher = pattern.matcher(Username);
+        return matcher.matches();
+    }
 
 
 }

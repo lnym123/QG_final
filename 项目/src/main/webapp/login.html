@@ -34,7 +34,7 @@
         </el-tab-pane>
         <el-tab-pane label="注册" name="register">
             <el-form ref="registerForm" :model="registerForm" label-width="80px" @submit.prevent="handleRegister">
-                <el-form-item label="用户名">
+                <el-form-item label="用户名" prop="username" :rules="username">
                     <el-input style="width: 200px;" v-model="registerForm.username" placeholder="请输入用户名"></el-input>
                 </el-form-item>
                 <!-- 密码 -->
@@ -102,7 +102,7 @@
     </el-dialog>
 <!--    //发送解禁请求-->
     <el-dialog
-            title="发送解决请求"
+            title="发送解禁请求"
             :visible.sync="dialogVisible2"
             width="30%"
             :before-close="handleClose2">
@@ -187,7 +187,14 @@
                         trigger: 'blur'
                     }
                 ],
-
+           //用户名逻辑
+                username: [
+                    { required: true, message: '用户名不能为空' },
+                    {
+                        pattern: /^[a-zA-Z]+$/,
+                        message: '用户名只能包含英文'
+                    }
+                ],
                 locationRules:[
                     { required: true, message: '地址不能为空' },
                     {
@@ -247,7 +254,7 @@
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/user/ForLogin',
                     method: 'POST',
-                    data: {username:"游客",
+                    data: {username:"youke",
                            password:"null"},
                     dataType: 'json',
                     success: (response) => {
@@ -255,7 +262,7 @@
                         localStorage.setItem('jwtToken', jwtToken); // 存储JWT到localStorage
                         // 登录成功后的操作，如跳转页面等
 
-                        window.location.href = "main page2.html";
+                        window.location.href = "MainPage.html";
                     },
                     error: (xhr, status, error) => {
                         alert("登录失败");

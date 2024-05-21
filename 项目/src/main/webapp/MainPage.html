@@ -66,7 +66,7 @@
 
                 <el-col :span="27">
                     <el-menu
-                            default-active="0"
+                            default-active="activeMenuIndex"
                             class="el-menu-vertical-demo"
                             @open="handleOpen"
                             @close="handleClose">
@@ -77,11 +77,11 @@
                             <i class="el-icon-user"></i>
                             <span slot="title">个人中心</span>
                         </el-menu-item>
-                        <el-menu-item index="3" @click="ShowPersonalGroup(),GetBalanceOfEachMemberInGroup(), GetGroupPublicFund()">
+                        <el-menu-item index="3" @click="ShowPersonalGroup(),GetBalanceOfEachMemberInGroup(), GetGroupPublicFund(),GetAuthorityIntime()">
                             <i class="el-icon-s-cooperation"></i>
                             <span slot="title">我的群组</span>
                         </el-menu-item>
-                        <el-menu-item index="4" @click="GetGroupBalance(),GetGroupFlow(),GetuserFund()">
+                        <el-menu-item index="4" @click="GetGroupBalance(),GetGroupFlow(),GetuserFund(),GetAuthorityIntime()">
                             <i class="el-icon-s-data"></i>
                             <span slot="title">资金中心</span>
                         </el-menu-item>
@@ -664,6 +664,7 @@
         },
             data () {
             return {
+                activeMenuIndex:'0', // 初始激活的菜单索引
           //验证正则表达式
                 locationRules: [
                     { required: true, message: '地址不能为空' },
@@ -995,7 +996,7 @@
                     });
 
                     if (response.data.success) {
-                        $('#resultMessage').text('头像上传成功！');
+                        $('#resultMessage').text('头像上传成功！重新登录即可显示');
                         this.checkToken();
                     } else {
                         $('#resultMessage').text('头像上传失败：' + response.data.message);
@@ -1005,6 +1006,7 @@
                 }
             },
             goBack() {
+                this.activeMenuIndex =0;
              this.currentTable="table1";
              this.showgroups();
             },
@@ -1121,47 +1123,49 @@
             },
             //展示个人群组数据
             ShowPersonalGroup(){
-                if(this.userId==="游客"){
+                if(this.userId === "游客"){
                     alert("请先点击头像登录");
                     return;
                 }
-                this.currentTable="table3";
+                this.currentTable = "table3";
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/group/ShowPersonalGroup',
                     method: 'POST',
-                    data:{username:this.userId},
+                    data: {username: this.userId},
                     dataType: 'json',
-                    success:  (response) => {
-                        if(response===null){
+                    success: (response) => {
 
-                            this.tableData2  = [
+                        if(response === null){
+                            this.tableData2 = [
                                 {
-                                    groupname1:" ",
-                                    number1:" ",
-                                    scale1:" ",
-                                    direction1:" ",
-                                    locked:"",
+                                    groupname1: " ",
+                                    number1: " ",
+                                    scale1: " ",
+                                    direction1: " ",
+                                    locked: "",
                                 },
                             ];
                             return;
                         }
-                        this.tableData2  = [
+
+                        this.tableData2 = [
                             {
-                                groupname1:response.groupname,
-                                number1:response.number,
-                                scale1:response.scale,
-                                direction1:response.direction,
-                                locked:response.Locked
+                                groupname1: response.groupname,
+                                number1: response.number,
+                                scale1: response.scale,
+                                direction1: response.direction,
+                                locked: response.Locked
                             },
                         ];
-
+                        if(this.tableData2.locked===false){
+                            alert("false")
+                        }
                     },
                     error: (xhr, status, error) => {
                         console.error('请求失败:', error);
                         // 处理请求失败逻辑
                     }
                 });
-
             },
             //退出群组
             forExitgroup(){
@@ -1175,7 +1179,11 @@
                     success: function (response) {
                         if (response.success) {
                             alert("退出成功");
-                            _this.ShowPersonalGroup();
+                            _this.ShowPersonalGroup()
+                            _this.GetBalanceOfEachMemberInGroup()
+                            _this.GetGroupPublicFund()
+                            _this.GetAuthorityIntime()
+
                         } else {
                             alert("请先加入群组");
                         }
@@ -1488,12 +1496,13 @@
                 const amount= this.currentRowData.number;
                 var _this=this;
                 $.ajax({
-                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds',
+                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds1',
                         method: 'POST',
                         data:{
                             Theuser:username,
-                            Useramount:Number(amount) + Number(_this.AllocatefundsNumber.number),
-                            pubilicAmount:_this.GroupPublicFunds-Number(_this.AllocatefundsNumber.number),
+                            Useramount:amount,
+                            pubilicAmount:_this.GroupPublicFunds,
+                            Theamount:Number(_this.AllocatefundsNumber.number),
                         },
                     dataType:'text',
                     success: (response) => {
@@ -1514,12 +1523,15 @@
                 const amount= this.currentRowData.number;
                 var _this=this;
                 $.ajax({
-                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds',
+                    url: 'http://localhost:8080/jwt_test/funds/Allocatefunds2',
                     method: 'POST',
                     data:{
                         Theuser:username,
-                        Useramount:Number(amount) - Number(_this.AllocatefundsNumber.number),
+                        Useramount:Number(_this.AllocatefundsNumber.number),
                         pubilicAmount:_this.GroupPublicFunds+Number(_this.AllocatefundsNumber.number),
+                        // Useramount:Number(amount) - Number(_this.AllocatefundsNumber.number),
+                        // pubilicAmount:_this.GroupPublicFunds+Number(_this.AllocatefundsNumber.number),
+                        Theamount:amount
                     },
                     dataType:'text',
                     success: (response) => {
@@ -1546,7 +1558,9 @@
                     },
                     dataType:'text',
                     success: (response) => {
-
+                        alert(response);
+                        _this.GetAuthorityIntime();
+                        _this.ShowPersonalGroup();
                     },
                     error: (xhr, status, error) => {
                         console.error('请求失败:', error);
@@ -1641,6 +1655,7 @@
                             payer:group.payer,
                             amount:group.amount,
                             time:group.transaction_time,
+                            nominal:group.nominal
                         }));
                         this.ShouKuanRecords = Tdata;
                     },
@@ -1656,6 +1671,7 @@
                 const payer = currentRow.payer;
                 const amount =currentRow.amount;
                 const time =currentRow.time;
+                const thenominal =currentRow.nominal;
                 this.gridData.splice(rowIndex, 1);
                 $.ajax({
                     url: 'http://localhost:8080/jwt_test/transaction/UserAcceptShouKuan',
@@ -1665,6 +1681,7 @@
                      ThePayer:payer,
                         TheAmount:amount,
                         TheTime:time,
+                        TheNominal:thenominal,
                     },
                     dataType: 'text',
                     success: (response) => {
@@ -1851,6 +1868,22 @@
                     callback(new Error('只能输入汉字'));
                 }
             },
+            GetAuthorityIntime(){
+                var _this=this;
+                $.ajax({
+                    url: 'http://localhost:8080/jwt_test/user/GetuserFund',
+                    method: 'POST',
+                    data: {
+                        username: _this.userId,
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        _this.Authority=response.authority;
+
+                    },
+                });
+            },
+
             checkToken() {// 当页面加载完成后
                         // 在Vue实例创建时尝试从localStorage获取token
                         this.token = localStorage.getItem('jwtToken');
