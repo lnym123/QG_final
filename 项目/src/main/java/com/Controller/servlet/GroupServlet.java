@@ -1,15 +1,13 @@
-package com.Controller.servlet;
+package com.controller.servlet;
 
-import com.Controller.BaseServlet;
-import com.DAO.GroupDAO;
-import com.DAO.MessageDAO;
-import com.DAO.UserDAO;
-import com.DAO.impl.GroupDAOimpl;
-import com.DAO.impl.UserDAOImpl;
+import com.controller.BaseServlet;
+import com.dao.GroupDAO;
+import com.dao.UserDAO;
+import com.dao.impl.GroupDAOimpl;
+import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.pojo.Group;
 import com.pojo.User;
-import org.junit.Test;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;

@@ -1,12 +1,12 @@
-package com.Controller.servlet;
+package com.controller.servlet;
 
-import com.Controller.BaseServlet;
-import com.DAO.GroupDAO;
-import com.DAO.MessageDAO;
-import com.DAO.UserDAO;
-import com.DAO.impl.GroupDAOimpl;
-import com.DAO.impl.MessageDAOimpl;
-import com.DAO.impl.UserDAOImpl;
+import com.controller.BaseServlet;
+import com.dao.GroupDAO;
+import com.dao.MessageDAO;
+import com.dao.UserDAO;
+import com.dao.impl.GroupDAOimpl;
+import com.dao.impl.MessageDAOimpl;
+import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.pojo.Message;
 import com.pojo.User;

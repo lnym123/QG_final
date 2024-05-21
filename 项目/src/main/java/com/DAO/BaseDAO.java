@@ -1,4 +1,4 @@
-package com.DAO;
+package com.dao;
 
 
 import com.util.JDBCUtilV2;

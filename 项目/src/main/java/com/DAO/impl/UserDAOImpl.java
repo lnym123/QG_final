@@ -1,7 +1,7 @@
-package com.DAO.impl;
+package com.dao.impl;
 
-import com.DAO.BaseDAO;
-import com.DAO.UserDAO;
+import com.dao.BaseDAO;
+import com.dao.UserDAO;
 import com.pojo.Message;
 import com.pojo.User;
 

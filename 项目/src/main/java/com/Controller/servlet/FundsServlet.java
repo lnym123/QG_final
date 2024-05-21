@@ -1,15 +1,13 @@
-package com.Controller.servlet;
+package com.controller.servlet;
 
-import com.Controller.BaseServlet;
-import com.DAO.FundDAO;
-import com.DAO.GroupDAO;
-import com.DAO.UserDAO;
-import com.DAO.impl.FundDAOimpl;
-import com.DAO.impl.GroupDAOimpl;
-import com.DAO.impl.UserDAOImpl;
+import com.controller.BaseServlet;
+import com.dao.FundDAO;
+import com.dao.GroupDAO;
+import com.dao.UserDAO;
+import com.dao.impl.FundDAOimpl;
+import com.dao.impl.GroupDAOimpl;
+import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.pojo.Funds;
 import com.pojo.Group;
 import com.pojo.User;

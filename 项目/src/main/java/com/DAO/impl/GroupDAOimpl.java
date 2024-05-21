@@ -1,14 +1,11 @@
-package com.DAO.impl;
+package com.dao.impl;
 
-import com.DAO.BaseDAO;
-import com.DAO.GroupDAO;
-import com.DAO.UserDAO;
+import com.dao.BaseDAO;
+import com.dao.GroupDAO;
 import com.alibaba.druid.util.StringUtils;
 import com.pojo.Group;
-import com.pojo.User;
 import com.util.JDBCUtilV2;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

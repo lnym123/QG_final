@@ -114,7 +114,7 @@
         <line-breakpoint enabled="true" type="java-method">
           <url>file://$PROJECT_DIR$/src/main/java/com/DAO/UserDAO.java</url>
           <line>8</line>
-          <properties class="com.DAO.UserDAO" method="insert">
+          <properties class="com.dao.UserDAO" method="insert">
             <option name="EMULATED" value="true" />
             <option name="WATCH_EXIT" value="false" />
           </properties>

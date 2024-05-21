@@ -1,9 +1,7 @@
-package com.DAO.impl;
+package com.dao.impl;
 
-import com.DAO.BaseDAO;
-import com.DAO.TransactionDAO;
-import com.pojo.Group;
-import com.pojo.Message;
+import com.dao.BaseDAO;
+import com.dao.TransactionDAO;
 import com.pojo.Transaction;
 
 import java.util.List;

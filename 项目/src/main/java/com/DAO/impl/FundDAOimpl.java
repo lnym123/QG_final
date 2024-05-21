@@ -1,7 +1,7 @@
-package com.DAO.impl;
+package com.dao.impl;
 
-import com.DAO.BaseDAO;
-import com.DAO.FundDAO;
+import com.dao.BaseDAO;
+import com.dao.FundDAO;
 import com.pojo.Funds;
 
 import java.util.List;

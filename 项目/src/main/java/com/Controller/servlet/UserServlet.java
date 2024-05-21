@@ -1,14 +1,18 @@
-package com.Controller.servlet;
+package com.controller.servlet;
 
-import com.Controller.BaseServlet;
-import com.DAO.GroupDAO;
-import com.DAO.MessageDAO;
-import com.DAO.UserDAO;
-import com.DAO.impl.GroupDAOimpl;
-import com.DAO.impl.MessageDAOimpl;
-import com.DAO.impl.UserDAOImpl;
+import com.alibaba.fastjson.JSONObject;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.controller.BaseServlet;
+import com.dao.GroupDAO;
+import com.dao.MessageDAO;
+import com.dao.UserDAO;
+import com.dao.impl.GroupDAOimpl;
+import com.dao.impl.MessageDAOimpl;
+import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.pojo.Group;
 import com.pojo.Message;
 import com.pojo.User;
@@ -19,26 +23,34 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
+
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import com.auth0.jwt.JWT;
 
+import static java.lang.System.out;
 
 @WebServlet("/user/*")
 @MultipartConfig // 启用文件上传功能
@@ -50,7 +62,10 @@ public class UserServlet  extends BaseServlet {
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
     private static final String SECRET_KEY = "MykEY";
     private static final long EXPIRATION_TIME = 3600000; // JWT有效期，这里是1小时
-
+    private static final Cache<String, User> userCache = Caffeine.newBuilder()
+            .maximumSize(1000) // 最多缓存1000个用户
+            .expireAfterWrite(10, TimeUnit.MINUTES) // 写入后10分钟过期
+            .build();
     public void FileUpload(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(req);
         if (!isMultipart) {
@@ -104,9 +119,10 @@ public class UserServlet  extends BaseServlet {
 
     }
 
-    public void ForChangeData(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void ForChangeData(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException, NoSuchAlgorithmException {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
+        String codePassword=hashPasswordSHA256(password);
         String location = req.getParameter("location");
         String PhoneNumber = req.getParameter("PhoneNumber");
         resp.setCharacterEncoding("UTF-8");
@@ -118,7 +134,7 @@ public class UserServlet  extends BaseServlet {
             resp.getWriter().write("地址格式错误");
             return;
         }
-        User user = new User(username, password, location, PhoneNumber);
+        User user = new User(username, codePassword, location, PhoneNumber);
         int i = userDao.updateData(user);
         if (i == 1) {
             resp.getWriter().write("修改完成");
@@ -126,60 +142,53 @@ public class UserServlet  extends BaseServlet {
 
     }
 
-    public void ForLogin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setCharacterEncoding("UTF-8");
-        String username = req.getParameter("username");
-        String password = req.getParameter("password");
-        List<User> users = userDao.selectAll(username, password);
-        User matchedUser = users.stream().findFirst().orElse(null);
+    public void ForLogin(HttpServletRequest req, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
+            PrintWriter out = resp.getWriter();
+            resp.setCharacterEncoding("UTF-8");
+            String username = req.getParameter("username");
+            String password = req.getParameter("password");
+            String hashedPassword = hashPasswordSHA256(password);
+            User matchedUser = userCache.getIfPresent(username);
 
-        if (matchedUser != null && matchedUser.getLocked().equals("true")) {
-            String jsonString = JSON.toJSONString("账号已被封禁");
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN); // 设置状态码为403 Forbidden
+            if (matchedUser == null) {
+                // 缓存未命中，查询数据库
+                List<User> users = userDao.selectAll(username, hashedPassword);
+                matchedUser = users.stream().findFirst().orElse(null);
+                if (matchedUser != null) {
+                    userCache.put(username, matchedUser); // 缓存用户信息
+                }
+            }
+
+            if (matchedUser != null && matchedUser.getLocked().equals("true")) {
+                String jsonString = JSON.toJSONString("账号已被封禁");
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             resp.setContentType("application/json;charset=utf-8");
             resp.getWriter().write(jsonString);
             return;
-        }
-        resp.setContentType("application/json;charset=utf-8");
-        PrintWriter out = resp.getWriter();
-        // 验证用户名和密码（这里仅作简单示意，实际应使用更安全的方法）
-        if (!matchedUser.getUsername().equals("youke")) { // 自定义的验证方法
-            // 验证通过，生成JWT
-            String token = Jwts.builder()
-                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
-                    .setSubject(username) // 设置JWT的主题，可以存放用户名
-                    .claim("avatar_url", matchedUser.getAvatar_url())
-                    .claim("authority", matchedUser.getAuthority())
-                    .claim("PersonalFunds", matchedUser.getPersonalfunds())
-                    .claim("username", username)
-                    .claim("password", password)
+            }
 
-                    .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
+            if (matchedUser != null && matchedUser.getPassword().equals(hashedPassword)) {
+                resp.setContentType("application/json");
+                String token = Jwts.builder()
+                        .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
+                        .setSubject(username) // 设置JWT的主题，可以存放用户名
+                        .claim("avatar_url", matchedUser.getAvatar_url())
+                        .claim("authority", matchedUser.getAuthority())
+                        .claim("PersonalFunds", matchedUser.getPersonalfunds())
+                        .claim("username", username)
+                        .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
+                        .compact();
+                out.println("{\"token\":\"" + token + "\"}");
 
-                    .compact();
-            // 将JWT发送回客户端（例如放入响应体或Cookie中）
-
-            out.println("{\"token\":\"" + token + "\"}");
-        } else if (Objects.equals(matchedUser.getUsername(), "youke")) {
-            String token = Jwts.builder()
-                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
-                    .claim("username", "null")
-                    .claim("password", password)
-                    .claim("authority", matchedUser.getAuthority())
-                    .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
-                    .compact();
-
-            out.println("{\"token\":\"" + token + "\"}");
-
-
-        } else {
-            // 用户名或密码错误处理...
-            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            resp.getWriter().write("Unauthorized");
-        }
+            } else {
+                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                resp.getWriter().write("Unauthorized");
+            }
     }
 
-    public void ForRegister(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+
+
+    public void ForRegister(HttpServletRequest req, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
         resp.setCharacterEncoding("UTF-8");
         String username = req.getParameter("username");
         String password = req.getParameter("password");
@@ -199,7 +208,7 @@ public class UserServlet  extends BaseServlet {
             return;
         }
 
-
+        String Codepassword=hashPasswordSHA256(password);
         List<User> users = userDao.selectAllUser();
         for (User user : users) {
             if (user.getUsername().equals(username)) {
@@ -207,7 +216,7 @@ public class UserServlet  extends BaseServlet {
                 return;
             }
         }
-        User user = new User(username, password, location, PhoneNumber);
+        User user = new User(username,Codepassword, location, PhoneNumber);
         int i = userDao.insert(user);
 
         if (i == 1) {

@@ -1,7 +1,10 @@
-package com.Controller.servlet;
+package com.controller.servlet;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public class ValidationHelper {
 
@@ -24,7 +27,17 @@ public class ValidationHelper {
         Matcher matcher = pattern.matcher(Username);
         return matcher.matches();
     }
-
+    public static String hashStringWithSHA256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] encodedhash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(encodedhash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
+        }
+    }
 
 }
+
+
 

@@ -77,7 +77,7 @@
                             <i class="el-icon-user"></i>
                             <span slot="title">个人中心</span>
                         </el-menu-item>
-                        <el-menu-item index="3" @click="ShowPersonalGroup(),GetBalanceOfEachMemberInGroup(), GetGroupPublicFund(),GetAuthorityIntime()">
+                        <el-menu-item index="3" @click="ShowPersonalGroup(),GetBalanceOfEachMemberInGroup(), GetGroupPublicFund(),GetAuthorityIntime(),CheckGroupisLocked()">
                             <i class="el-icon-s-cooperation"></i>
                             <span slot="title">我的群组</span>
                         </el-menu-item>
@@ -1157,8 +1157,8 @@
                                 locked: response.Locked
                             },
                         ];
-                        if(this.tableData2.locked===false){
-                            alert("false")
+                        if(this.tableData2.locked==="true"){
+                            alert("true")
                         }
                     },
                     error: (xhr, status, error) => {
@@ -1852,6 +1852,11 @@
                         // 处理请求失败逻辑
                     },
                 })
+            },
+            CheckGroupisLocked(){
+              if(this.tableData2.locked==="true"){
+                  alert("已封禁")
+              }
             },
             checkNumber(rule, value, callback) {
                 if (value === '' || Number(value) > 0) {
