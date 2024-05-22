@@ -11,6 +11,8 @@ import com.alibaba.fastjson.JSON;
 import com.pojo.Funds;
 import com.pojo.Group;
 import com.pojo.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -24,6 +26,7 @@ import java.util.Map;
 
 @WebServlet("/funds/*")
 public class FundsServlet extends BaseServlet {
+    private static final Logger logger = LoggerFactory.getLogger(FundsServlet.class);
  FundDAO fundDAO=new FundDAOimpl();
  UserDAO userDAO=new UserDAOImpl();
  GroupDAO groupDAO=new GroupDAOimpl();

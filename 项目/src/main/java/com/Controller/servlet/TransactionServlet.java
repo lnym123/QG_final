@@ -1,5 +1,6 @@
 package com.controller.servlet;
 
+import com.alibaba.fastjson.JSONArray;
 import com.controller.BaseServlet;
 import com.dao.FundDAO;
 import com.dao.GroupDAO;
@@ -10,31 +11,50 @@ import com.dao.impl.GroupDAOimpl;
 import com.dao.impl.TransactionDAOimpl;
 import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.pojo.Funds;
 import com.pojo.Group;
 import com.pojo.Transaction;
 import com.pojo.User;
 import com.util.JDBCUtilV2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.controller.servlet.UserServlet.hashPasswordSHA256;
+
 
 @WebServlet("/transaction/*")
 public class TransactionServlet extends BaseServlet {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionServlet.class);
     TransactionDAO transactionDAO = new TransactionDAOimpl();
     UserDAO userDAO = new UserDAOImpl();
     FundDAO fundDAO= new FundDAOimpl();
     GroupDAO groupDAO= new GroupDAOimpl();
+    private static final Cache<String, User> userCache = Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(10, TimeUnit.MINUTES) //
+            .build();
+    private static final Cache<String, Group> GroupCache = Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .build();
 
-    public void SendTransaction(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+
+    public void SendTransaction(HttpServletRequest request, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
         LocalDateTime currentTime = LocalDateTime.now(); // 定义日期时间格式
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String formattedTime = currentTime.format(formatter);  // 将当前时间格式化为字符串
@@ -42,6 +62,8 @@ public class TransactionServlet extends BaseServlet {
         String username = request.getParameter("username");//发起者
         String object = request.getParameter("object");//收款者
         String password = request.getParameter("password");//密码
+        String hashedPassword = hashPasswordSHA256(password);
+
         int number = Integer.parseInt(request.getParameter("number"));//交易金额
         if (number<1) {
             resp.getWriter().write("请输入大于0的数字");
@@ -49,20 +71,36 @@ public class TransactionServlet extends BaseServlet {
         }
         User user = userDAO.selectByname(username);
         String TruePassword = user.getPassword();  //得到正确密码
-        if (!TruePassword.equals(password)) {
+        if (!TruePassword.equals(hashedPassword )) {
             resp.getWriter().write("密码错误");
             return;
         }
+        List<Group> groups;  //所有的用户以及群组
+        List<User> users;
+        if (!GroupCache.asMap().isEmpty()&&!userCache.asMap().isEmpty()) {
+            // 缓存不为空，从缓存中获取数据
+            groups = new ArrayList<>(GroupCache.asMap().values());
+            users = new ArrayList<>(userCache.asMap().values());
+
+        }else {
+//            // 缓存为空，查询数据库
+            users = userDAO.selectAllUser();
+            groups = groupDAO.selectAllForAdmin();
+            for (Group group : groups) {
+                GroupCache.put(group.getGroupname(), group); // 缓存查询结果
+            }
+            for (User user1 : users) {
+                userCache.put(user1.getUsername(), user1); // 缓存查询结果
+            }
+        }
        //确认交易对象是否存在
-        List<User> users=userDAO.selectAllUser();
-        List<Group> groups=groupDAO.selectAllForAdmin();
         List<String> names = new ArrayList<>();
         for (User user1 : users) {
             names.add(user1.getUsername());
         }
         for (Group group1 : groups) {
             names.add(group1.getGroupname());
-        }
+        }   //获取所有的交易对象以及交易群组
         for (String name : names) {
             if(name.equals(object)){
                 String inTheNameOf = request.getParameter("InTheNameOf");
@@ -80,6 +118,7 @@ public class TransactionServlet extends BaseServlet {
                     } catch (Exception e) {
                         try {
                             connection.rollback();
+                            logger.error(e.getMessage());
                             resp.getWriter().write("发生错误，请重新发送");
                             return;
                         } catch (Exception ex) {
@@ -114,6 +153,7 @@ public class TransactionServlet extends BaseServlet {
                     } catch (Exception e) {
                         try {
                             connection.rollback();
+                            logger.error(e.getMessage());
                             resp.getWriter().write("发生错误，请重新发送");
                             return;
                         } catch (Exception ex) {
@@ -133,7 +173,7 @@ public class TransactionServlet extends BaseServlet {
     }
 
 
-    public void  GetFuKuanSituation(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+    public void  GetFuKuanSituation(HttpServletRequest request, HttpServletResponse resp) throws IOException {
         String id = request.getParameter("id");
         List<Transaction> transactions=transactionDAO.GetFuKuanTransactionS(id);
         String jsonString= JSON.toJSONString(transactions);
@@ -195,6 +235,7 @@ public class TransactionServlet extends BaseServlet {
         } catch (Exception e) {
             try {
                 connection.rollback();
+                logger.error(e.getMessage());
                 resp.getWriter().write("发生错误，请重新操作");
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
@@ -223,7 +264,7 @@ public class TransactionServlet extends BaseServlet {
         } catch (Exception e) {
             try {
                 connection.rollback();
-
+                logger.error(e.getMessage());
                 resp.getWriter().write("发生错误，请重新操作");
                 return;
             } catch (Exception ex) {
@@ -233,8 +274,6 @@ public class TransactionServlet extends BaseServlet {
         }finally {
             JDBCUtilV2.release();
         }
-
-
         resp.getWriter().write("已拒绝");
     }
     public void SendFuKuanAgain(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
@@ -242,7 +281,6 @@ public class TransactionServlet extends BaseServlet {
         String thePayer = request.getParameter("ThePayer");
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
-        String therecipient = request.getParameter("Therecipient");
         Connection connection= null;
         try {
             connection= JDBCUtilV2.getConnection();
@@ -254,6 +292,7 @@ public class TransactionServlet extends BaseServlet {
         } catch (Exception e) {
             try {
                 connection.rollback();
+                logger.error(e.getMessage());
                 resp.getWriter().write("发生错误，请重新操作");
                 return;
             } catch (Exception ex) {
@@ -271,7 +310,6 @@ public class TransactionServlet extends BaseServlet {
         String thePayer = request.getParameter("ThePayer");
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
-        String therecipient = request.getParameter("Therecipient");
         Connection connection= null;
         try {
             connection= JDBCUtilV2.getConnection();
@@ -284,6 +322,7 @@ public class TransactionServlet extends BaseServlet {
         } catch (Exception e) {
             try {
                 connection.rollback();
+                logger.error(e.getMessage());
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -298,7 +337,6 @@ public class TransactionServlet extends BaseServlet {
     }
    public  void DeleteFuKuan(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
        String thePayer = request.getParameter("ThePayer");
-       String theAmount = request.getParameter("TheAmount");
        String theTime = request.getParameter("TheTime");
        String therecipient = request.getParameter("Therecipient");
        transactionDAO.DeleteRecord(thePayer,theTime,therecipient);
@@ -306,7 +344,7 @@ public class TransactionServlet extends BaseServlet {
        resp.getWriter().write("已删除");
 
    }
-   public void  GetGroupShouKuanSituation(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+   public void  GetGroupShouKuanSituation(HttpServletRequest request, HttpServletResponse resp) throws IOException {
        String id = request.getParameter("id");
        User user=userDAO.selectByname(id);
        String groupname= user.getGroupid();
@@ -321,7 +359,7 @@ public class TransactionServlet extends BaseServlet {
        resp.getWriter().write(jsonString);
    }
 
-   public void GroupShouKuanaccept(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+   public void GroupShouKuanaccept(HttpServletRequest request, HttpServletResponse resp) throws IOException {
        resp.setCharacterEncoding("UTF-8");
        String thePayer = request.getParameter("ThePayer");
        String theAmount = request.getParameter("TheAmount");

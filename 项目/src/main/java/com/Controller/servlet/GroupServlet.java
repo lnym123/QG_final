@@ -1,11 +1,14 @@
 package com.controller.servlet;
 
+import com.alibaba.fastjson.JSONArray;
 import com.controller.BaseServlet;
 import com.dao.GroupDAO;
 import com.dao.UserDAO;
 import com.dao.impl.GroupDAOimpl;
 import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.pojo.Group;
 import com.pojo.User;
 
@@ -14,12 +17,39 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @WebServlet("/group/*")
 public class GroupServlet extends BaseServlet {
     private final  GroupDAO groupDAO =new GroupDAOimpl();
     private final UserDAO userDao = new UserDAOImpl();
+    private static final Cache<String, Group> GroupCache = Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .build();
+
+
+
+    public void  ShowGroups(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=utf-8");
+        if (!GroupCache.asMap().isEmpty()) {
+            // 缓存不为空，从缓存中获取数据
+            List<Group> groups = new ArrayList<>(GroupCache.asMap().values());
+            JSONArray jsonArray = new JSONArray(groups);
+            resp.getWriter().write(jsonArray.toString());
+        } else {
+            // 缓存为空，查询数据库
+            List<Group> groups = groupDAO.selectAll();
+            for (Group group : groups) {
+                GroupCache.put(group.getGroupname(), group); // 缓存查询结果
+            }
+            String jsonString = JSON.toJSONString(groups);
+            resp.getWriter().write(jsonString);
+        }
+    }
+
 
     public void GroupQueryService(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String groupName = req.getParameter("groupName");
@@ -36,14 +66,6 @@ public class GroupServlet extends BaseServlet {
         resp.getWriter().write(jsonString);
     }
 
-    public void  ShowGroups(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        List<Group> groups=groupDAO.selectAll();
-        String jsonString= JSON.toJSONString(groups);
-        resp.setContentType("text/json;charset=utf-8");
-        resp.getWriter().write(jsonString);
-
-    }
-
     public void ShowPersonalGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String username = req.getParameter("username");
         resp.setContentType("text/json;charset=utf-8");
@@ -54,18 +76,7 @@ public class GroupServlet extends BaseServlet {
         resp.getWriter().write(jsonString);
 
     }
-    class ErrorResponse {
-        private String errorMessage;
 
-        public ErrorResponse(String errorMessage) {
-            this.errorMessage = errorMessage;
-        }
-
-        // Getter for errorMessage
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-    }
     public void ForAdminChangeGroup (HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = req.getParameter("id");
         resp.setCharacterEncoding("UTF-8");

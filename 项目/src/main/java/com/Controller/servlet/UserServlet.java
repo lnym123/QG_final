@@ -18,6 +18,7 @@ import com.pojo.Message;
 import com.pojo.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.aopalliance.intercept.Joinpoint;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -48,9 +49,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
-import com.auth0.jwt.JWT;
 
-import static java.lang.System.out;
+
 
 @WebServlet("/user/*")
 @MultipartConfig // 启用文件上传功能
@@ -65,6 +65,10 @@ public class UserServlet  extends BaseServlet {
     private static final Cache<String, User> userCache = Caffeine.newBuilder()
             .maximumSize(1000) // 最多缓存1000个用户
             .expireAfterWrite(10, TimeUnit.MINUTES) // 写入后10分钟过期
+            .build();
+    private static final Cache<String, User> userImfCache = Caffeine.newBuilder()  //用户个人信息缓存
+            .maximumSize(1000)
+            .expireAfterWrite(10, TimeUnit.MINUTES)
             .build();
     public void FileUpload(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(req);
@@ -226,7 +230,14 @@ public class UserServlet  extends BaseServlet {
     }
 
     public void ShowImformation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        User user = userDao.selectByname(req.getParameter("username"));
+        User user;
+        if(!userImfCache.asMap().isEmpty()){
+            user = userImfCache.asMap().get(req.getParameter("username"));
+        }else{
+            user = userDao.selectByname(req.getParameter("username"));
+            userImfCache.put(user.getUsername(), user);
+        }
+
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> response = new HashMap<>();
 

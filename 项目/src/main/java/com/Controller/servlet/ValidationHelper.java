@@ -1,5 +1,9 @@
 package com.controller.servlet;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Test;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.MessageDigest;
@@ -21,21 +25,16 @@ public class ValidationHelper {
         Matcher matcher = pattern.matcher(location);
         return matcher.matches();
     }
+
     public static boolean isValidUsername(String Username) {
         String locationPattern = "^[a-zA-Z]+$";
         Pattern pattern = Pattern.compile(locationPattern);
         Matcher matcher = pattern.matcher(Username);
         return matcher.matches();
     }
-    public static String hashStringWithSHA256(String input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedhash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(encodedhash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not found", e);
-        }
-    }
+
+
+
 
 }
 
