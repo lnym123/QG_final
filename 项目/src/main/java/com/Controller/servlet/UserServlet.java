@@ -1,5 +1,6 @@
 package com.controller.servlet;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.controller.BaseServlet;
@@ -16,6 +17,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.pojo.Group;
 import com.pojo.Message;
 import com.pojo.User;
+import com.util.CheckCodeUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.aopalliance.intercept.Joinpoint;
@@ -25,10 +27,10 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 
-
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -37,9 +39,7 @@ import java.util.Objects;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
-import java.io.File;
-import java.io.InputStream;
-import java.io.PrintWriter;
+import javax.servlet.http.HttpSession;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -62,7 +62,7 @@ public class UserServlet  extends BaseServlet {
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
     private static final String SECRET_KEY = "MykEY";
     private static final long EXPIRATION_TIME = 3600000; // JWT有效期，这里是1小时
-    private static final Cache<String, User> userCache = Caffeine.newBuilder()
+    private static final Cache<String, User> userCache = Caffeine.newBuilder()  //储存已经登录的用户
             .maximumSize(1000) // 最多缓存1000个用户
             .expireAfterWrite(10, TimeUnit.MINUTES) // 写入后10分钟过期
             .build();
@@ -70,6 +70,13 @@ public class UserServlet  extends BaseServlet {
             .maximumSize(1000)
             .expireAfterWrite(10, TimeUnit.MINUTES)
             .build();
+    private static final Cache<String, User> AlluserCache = Caffeine.newBuilder()  //储存所有用户
+            .maximumSize(1000) // 最多缓存1000个用户
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .build();
+
+
+
     public void FileUpload(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(req);
         if (!isMultipart) {
@@ -151,7 +158,17 @@ public class UserServlet  extends BaseServlet {
             resp.setCharacterEncoding("UTF-8");
             String username = req.getParameter("username");
             String password = req.getParameter("password");
-            String hashedPassword = hashPasswordSHA256(password);
+            String checkCode = req.getParameter("checkCode");
+        HttpSession session = req.getSession();
+        String checkCode1 = (String) session.getAttribute("checkCode");
+
+
+        if(!checkCode1.equalsIgnoreCase(checkCode)){
+            resp.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            resp.setContentType("application/json;charset=utf-8");
+            return;
+        }
+        String hashedPassword = hashPasswordSHA256(password);
             User matchedUser = userCache.getIfPresent(username);
 
             if (matchedUser == null) {
@@ -199,6 +216,14 @@ public class UserServlet  extends BaseServlet {
         String location = req.getParameter("location");
         String PhoneNumber = req.getParameter("PhoneNumber");
         String confirmPassword = req.getParameter("confirmPassword");
+        String checkCode = req.getParameter("checkCode");
+        HttpSession session = req.getSession();
+        String checkCode1 = (String) session.getAttribute("checkCode");
+
+        if(!checkCode1.equalsIgnoreCase(checkCode)){
+            resp.getWriter().write("验证码错误");
+            return;
+        }
         if (!ValidationHelper.isValidPhoneNumber(PhoneNumber)) {
             resp.getWriter().write("手机号格式错误");
             return;
@@ -213,20 +238,31 @@ public class UserServlet  extends BaseServlet {
         }
 
         String Codepassword=hashPasswordSHA256(password);
-        List<User> users = userDao.selectAllUser();
-        for (User user : users) {
-            if (user.getUsername().equals(username)) {
-                resp.getWriter().write("用户名已存在");
-                return;
+
+        List<User> users;
+        if (!AlluserCache.asMap().isEmpty()) {
+            // 缓存不为空，从缓存中获取数据
+            users= new ArrayList<>(AlluserCache.asMap().values());
+        } else {
+            // 缓存为空，查询数据库
+            users = userDao.selectAllUser();
+            for (User user : users) {
+                AlluserCache.put(user.getUsername(), user); // 缓存查询结果
+            }
+
+            for (User user : users) {
+                if (user.getUsername().equals(username)) {
+                    resp.getWriter().write("用户名已存在");
+                    return;
+                }
+            }
+            User user = new User(username, Codepassword, location, PhoneNumber);
+            int i = userDao.insert(user);
+
+            if (i == 1) {
+                resp.getWriter().write("注册成功");
             }
         }
-        User user = new User(username,Codepassword, location, PhoneNumber);
-        int i = userDao.insert(user);
-
-        if (i == 1) {
-            resp.getWriter().write("注册成功");
-        }
-
     }
 
     public void ShowImformation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -407,7 +443,16 @@ public class UserServlet  extends BaseServlet {
         resp.getWriter().write(jsonString);
 
     }
-
+    public void  CheckCode(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        //生成验证码
+        ServletOutputStream os = resp.getOutputStream();
+        String string = CheckCodeUtil.outputVerifyImage(100, 50, os, 4);
+        HttpSession session = req.getSession();
+        session.setAttribute("checkCode",string);
+        resp.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        resp.setHeader("Pragma", "no-cache");
+        resp.setDateHeader("Expires", 0);
+    }
 
     public static String hashPasswordSHA256(String plainPassword) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -423,6 +468,8 @@ public class UserServlet  extends BaseServlet {
 
         return hashtext;
     }
+
+
 
     private void saveFileToDatabase(String filePath, String contentType, long contentLength, String userId) throws SQLException {
         Connection conn = null;

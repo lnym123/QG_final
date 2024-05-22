@@ -52,7 +52,7 @@ public class TransactionServlet extends BaseServlet {
             .maximumSize(1000)
             .expireAfterWrite(10, TimeUnit.MINUTES)
             .build();
-
+    Connection connection= null;
 
     public void SendTransaction(HttpServletRequest request, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
         LocalDateTime currentTime = LocalDateTime.now(); // 定义日期时间格式
@@ -106,7 +106,6 @@ public class TransactionServlet extends BaseServlet {
                 String inTheNameOf = request.getParameter("InTheNameOf");
                 if(inTheNameOf.equals("个人")){//事务保证发送和冻结资金同时发生
                     Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",null,"个人");
-                    Connection connection= null;
                     try {
                         connection= JDBCUtilV2.getConnection();
                         connection.setAutoCommit(false);
@@ -141,7 +140,6 @@ public class TransactionServlet extends BaseServlet {
                         return;
                     }
                     Transaction transaction = new Transaction(username,object,formattedTime,number,"已结算",groupname,"群组");
-                    Connection connection= null;
                     try {
                         connection= JDBCUtilV2.getConnection();
                         connection.setAutoCommit(false);
@@ -202,7 +200,6 @@ public class TransactionServlet extends BaseServlet {
         String therecipient = request.getParameter("Therecipient"); //为user本人
         String TheNominal=request.getParameter("TheNominal");
         List<Transaction> transactions=transactionDAO.GetShouKuanTransactionS(therecipient);//未转换前的收款单子。
-        Connection connection= null;
         try {
             connection = JDBCUtilV2.getConnection();
             connection.setAutoCommit(false);
@@ -253,7 +250,6 @@ public class TransactionServlet extends BaseServlet {
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
         String therecipient = request.getParameter("Therecipient");
-        Connection connection= null;
         try {
             connection= JDBCUtilV2.getConnection();
             connection.setAutoCommit(false);
@@ -281,7 +277,6 @@ public class TransactionServlet extends BaseServlet {
         String thePayer = request.getParameter("ThePayer");
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
-        Connection connection= null;
         try {
             connection= JDBCUtilV2.getConnection();
             connection.setAutoCommit(false);
@@ -310,7 +305,6 @@ public class TransactionServlet extends BaseServlet {
         String thePayer = request.getParameter("ThePayer");
         String theAmount = request.getParameter("TheAmount");
         String theTime = request.getParameter("TheTime");
-        Connection connection= null;
         try {
             connection= JDBCUtilV2.getConnection();
             connection.setAutoCommit(false);
@@ -370,12 +364,10 @@ public class TransactionServlet extends BaseServlet {
        String groupname= user.getGroupid(); //真正的收款者，群名
        String TheNominal=request.getParameter("TheNominal");
        //如果以群组名义，payer是群组名，如果名义是个人，payer是人名，
-       Connection connection= null;
        try {
            connection= JDBCUtilV2.getConnection();
            connection.setAutoCommit(false);
            //操作
-
            if(TheNominal.equals("个人")){
                transactionDAO.GetGroupShouKuanRecord(thePayer,theAmount,theTime,groupname);//入账，修改订单信息
                //写入收款方流水

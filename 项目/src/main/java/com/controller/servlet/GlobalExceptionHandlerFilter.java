@@ -30,7 +30,6 @@ public class GlobalExceptionHandlerFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         try {
-            // 继续过滤链，实际调用目标资源（如Servlet）
             chain.doFilter(request, response);
         } catch (Exception e) {
             // 设置HTTP状态码为500，表示服务器内部错误
@@ -42,7 +41,6 @@ public class GlobalExceptionHandlerFilter implements Filter {
             // 写入错误信息
             writer.write("Internal Server Error: " + e.getMessage());
 
-            // 记录异常日志，实际生产中可能需要更详细的日志记录
             logger.error("Exception occurred while processing request for {}", httpRequest.getRequestURI(), e);
 
             // 如果需要，可以发送错误通知或者进行其他错误处理操作

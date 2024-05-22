@@ -13,8 +13,8 @@
 <body>
 <el-tag>QG资金管理系统</el-tag>
 <div id="app">
-    <el-tabs v-model="activeTab" type="card">
-        <el-tab-pane label="登录" name="login">
+    <el-tabs v-model="activeTab" type="card" @click="changeImg">
+        <el-tab-pane label="登录" name="login" @click="changeImg">
 
             <el-form ref="loginForm" :model="loginForm" label-width="80px" @submit.prevent="handleLogin">
                 <el-form-item label="用户名">
@@ -22,6 +22,11 @@
                 </el-form-item>
                 <el-form-item label="密码">
                     <el-input  style="width: 200px;" type="password" v-model="loginForm.password" placeholder="请输入密码"></el-input>
+                </el-form-item>
+                <el-form-item label="验证码" style="margin-top: 20px">
+                    <el-input style="width: 200px;" v-model="loginForm.checkCode" placeholder="请输入验证码"></el-input>
+                    <el-image style="margin-left: 10px;" :src="checkCodeUrl"  @click="changeImg"></el-image>
+                    <el-button type="text" @click="changeImg">看不清？</el-button>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="handleLogin">登录</el-button>
@@ -32,7 +37,7 @@
 
             </el-form>
         </el-tab-pane>
-        <el-tab-pane label="注册" name="register">
+        <el-tab-pane label="注册" name="register" @click="changeImg">
             <el-form ref="registerForm" :model="registerForm" label-width="80px" @submit.prevent="handleRegister">
                 <el-form-item label="用户名" prop="username" :rules="username">
                     <el-input style="width: 200px;" v-model="registerForm.username" placeholder="请输入用户名"></el-input>
@@ -53,6 +58,11 @@
                 <!-- 确认密码 -->
                 <el-form-item label="确认密码" prop="confirmPassword" :rules="confirmPasswordRules">
                     <el-input style="width: 200px;" type="password" v-model="registerForm.confirmPassword" placeholder="请再次输入密码"></el-input>
+                </el-form-item>
+                <el-form-item label="验证码">
+                    <el-input style="width: 200px;" v-model="loginForm.checkCode" placeholder="请输入验证码"></el-input>
+                    <el-image style="margin-left: 10px;" :src="checkCodeUrl" fit="cover" @click="changeImg"></el-image>
+                    <el-button type="text" @click="changeImg">看不清？</el-button>
                 </el-form-item>
                 <el-form-item>
                     <el-button  @click="handleRegister">注册</el-button>
@@ -123,6 +133,9 @@
 <script>
     new Vue({
         el: "#app",
+        mounted() {
+            this.changeImg();
+        },
         data() {
             return {
                 User: {
@@ -134,10 +147,12 @@
                 dialogVisible1: false,
                 dialogVisible2:false,
                 userId: "",
+                checkCodeUrl:"",
                 activeTab: "login",
                 loginForm: {
                     username: "",
-                    password: ""
+                    password: "",
+                    checkCode: '', // 验证码输入
                 },
                 Reset: {
                     password: "",
@@ -205,6 +220,11 @@
             }
         },
         methods: {
+            changeImg() {
+                // 生成一个新的 URL，通过添加时间戳来防止缓存
+                this.checkCodeUrl = 'http://localhost:8080/jwt_test/user/CheckCode?' + new Date().getTime();
+                console.log(this.checkCodeUrl);
+            },
             handleCloseForChange(key, keyPath) {
                 this.dialogVisible=false;
             },
@@ -240,6 +260,11 @@
                         403: function(response) {
                             // 账号被封禁处理逻辑
                             alert("您的账号已被封禁，无法登录");
+                            return;
+                        },
+                        405: function(response) {
+                            // 账号被封禁处理逻辑
+                            alert("验证码错误");
                             return;
                         },
                     },
