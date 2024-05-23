@@ -86,6 +86,7 @@
             SendPayment(){
                 if(this.PayMent.InTheNameOf==='个人'&&this.PayMent.number>this.userFund){
                     alert("个人余额不足");
+                    return;
                 }
                 var _this=this;
                 $.ajax({

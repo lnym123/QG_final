@@ -1,14 +1,8 @@
 package com.controller.servlet;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Test;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
+
 
 public class ValidationHelper {
 

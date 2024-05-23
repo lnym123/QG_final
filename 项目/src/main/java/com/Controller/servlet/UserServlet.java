@@ -1,42 +1,27 @@
 package com.controller.servlet;
-
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.controller.BaseServlet;
-import com.dao.GroupDAO;
-import com.dao.MessageDAO;
-import com.dao.UserDAO;
-import com.dao.impl.GroupDAOimpl;
-import com.dao.impl.MessageDAOimpl;
-import com.dao.impl.UserDAOImpl;
 import com.alibaba.fastjson.JSON;
+import com.dao.UserDAO;
+import com.dao.impl.UserDAOImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.pojo.Group;
-import com.pojo.Message;
 import com.pojo.User;
+import com.service.UserService;
+import com.service.impl.UserServiceImpl;
 import com.util.CheckCodeUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.aopalliance.intercept.Joinpoint;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.Objects;
-
-import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpSession;
@@ -55,28 +40,13 @@ import java.util.*;
 @WebServlet("/user/*")
 @MultipartConfig // 启用文件上传功能
 public class UserServlet  extends BaseServlet {
-    private final UserDAO userDao = new UserDAOImpl();
-    MessageDAO messageDAO = new MessageDAOimpl();
-    GroupDAO groupDAO = new GroupDAOimpl();
+    private static final Logger logger = LoggerFactory.getLogger(UserServlet.class);
+    UserService userService = new UserServiceImpl();
     private static final String UPLOAD_DIR = "src/main/webapp/images";
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
     private static final String SECRET_KEY = "MykEY";
     private static final long EXPIRATION_TIME = 3600000; // JWT有效期，这里是1小时
-    private static final Cache<String, User> userCache = Caffeine.newBuilder()  //储存已经登录的用户
-            .maximumSize(1000) // 最多缓存1000个用户
-            .expireAfterWrite(10, TimeUnit.MINUTES) // 写入后10分钟过期
-            .build();
-    private static final Cache<String, User> userImfCache = Caffeine.newBuilder()  //用户个人信息缓存
-            .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build();
-    private static final Cache<String, User> AlluserCache = Caffeine.newBuilder()  //储存所有用户
-            .maximumSize(1000) // 最多缓存1000个用户
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build();
-
-
-
+    UserDAO userDAO = new UserDAOImpl();
     public void FileUpload(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(req);
         if (!isMultipart) {
@@ -129,8 +99,8 @@ public class UserServlet  extends BaseServlet {
         }
 
     }
-
-    public void ForChangeData(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException, NoSuchAlgorithmException {
+   //用户修改个人信息
+    public void ForChangeData(HttpServletRequest req, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
         String codePassword=hashPasswordSHA256(password);
@@ -145,54 +115,36 @@ public class UserServlet  extends BaseServlet {
             resp.getWriter().write("地址格式错误");
             return;
         }
-        User user = new User(username, codePassword, location, PhoneNumber);
-        int i = userDao.updateData(user);
-        if (i == 1) {
-            resp.getWriter().write("修改完成");
-        }
+        userService.ChangePersonData(username, codePassword, location, PhoneNumber);
+        resp.getWriter().write("修改完成");
 
     }
-
+   //登录功能
     public void ForLogin(HttpServletRequest req, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
             PrintWriter out = resp.getWriter();
             resp.setCharacterEncoding("UTF-8");
             String username = req.getParameter("username");
             String password = req.getParameter("password");
             String checkCode = req.getParameter("checkCode");
-        HttpSession session = req.getSession();
-        String checkCode1 = (String) session.getAttribute("checkCode");
-
-
-        if(!checkCode1.equalsIgnoreCase(checkCode)){
+            HttpSession session = req.getSession();
+            String checkCode1 = (String) session.getAttribute("checkCode");
+        if(!checkCode1.equalsIgnoreCase(checkCode)){          //校验验证码
             resp.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            resp.setContentType("application/json;charset=utf-8");
             return;
         }
         String hashedPassword = hashPasswordSHA256(password);
-            User matchedUser = userCache.getIfPresent(username);
+        User matchedUser = userService.Forlogin(username, hashedPassword);//service层中得到匹配用户
 
-            if (matchedUser == null) {
-                // 缓存未命中，查询数据库
-                List<User> users = userDao.selectAll(username, hashedPassword);
-                matchedUser = users.stream().findFirst().orElse(null);
-                if (matchedUser != null) {
-                    userCache.put(username, matchedUser); // 缓存用户信息
-                }
+        if (matchedUser != null && matchedUser.getLocked().equals("true")) {
+                    resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    return;
             }
-
-            if (matchedUser != null && matchedUser.getLocked().equals("true")) {
-                String jsonString = JSON.toJSONString("账号已被封禁");
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.setContentType("application/json;charset=utf-8");
-            resp.getWriter().write(jsonString);
-            return;
-            }
-
+       logger.info("当前用户"+matchedUser);
             if (matchedUser != null && matchedUser.getPassword().equals(hashedPassword)) {
                 resp.setContentType("application/json");
                 String token = Jwts.builder()
                         .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes()) // 使用HS256算法签名
-                        .setSubject(username) // 设置JWT的主题，可以存放用户名
+                        .setSubject(username)
                         .claim("avatar_url", matchedUser.getAvatar_url())
                         .claim("authority", matchedUser.getAuthority())
                         .claim("PersonalFunds", matchedUser.getPersonalfunds())
@@ -200,15 +152,13 @@ public class UserServlet  extends BaseServlet {
                         .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
                         .compact();
                 out.println("{\"token\":\"" + token + "\"}");
-
             } else {
                 resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 resp.getWriter().write("Unauthorized");
             }
     }
 
-
-
+    //注册用户
     public void ForRegister(HttpServletRequest req, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
         resp.setCharacterEncoding("UTF-8");
         String username = req.getParameter("username");
@@ -219,6 +169,8 @@ public class UserServlet  extends BaseServlet {
         String checkCode = req.getParameter("checkCode");
         HttpSession session = req.getSession();
         String checkCode1 = (String) session.getAttribute("checkCode");
+        System.out.println(checkCode);
+        System.out.println(checkCode1);
 
         if(!checkCode1.equalsIgnoreCase(checkCode)){
             resp.getWriter().write("验证码错误");
@@ -236,47 +188,24 @@ public class UserServlet  extends BaseServlet {
             resp.getWriter().write("用户名格式错误");
             return;
         }
+        if(!confirmPassword.equals(password)){
+            resp.getWriter().write("请正确重复输入密码");
+            return;
+        }
 
         String Codepassword=hashPasswordSHA256(password);
+        User user = new User(username, Codepassword, location, PhoneNumber);
+        String string = userService.ForRegister(user);  //返回得到的注册成功与否情况
+        resp.getWriter().write(string);
 
-        List<User> users;
-        if (!AlluserCache.asMap().isEmpty()) {
-            // 缓存不为空，从缓存中获取数据
-            users= new ArrayList<>(AlluserCache.asMap().values());
-        } else {
-            // 缓存为空，查询数据库
-            users = userDao.selectAllUser();
-            for (User user : users) {
-                AlluserCache.put(user.getUsername(), user); // 缓存查询结果
-            }
-
-            for (User user : users) {
-                if (user.getUsername().equals(username)) {
-                    resp.getWriter().write("用户名已存在");
-                    return;
-                }
-            }
-            User user = new User(username, Codepassword, location, PhoneNumber);
-            int i = userDao.insert(user);
-
-            if (i == 1) {
-                resp.getWriter().write("注册成功");
-            }
-        }
     }
-
+   //展示用户个人信息
     public void ShowImformation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User user;
-        if(!userImfCache.asMap().isEmpty()){
-            user = userImfCache.asMap().get(req.getParameter("username"));
-        }else{
-            user = userDao.selectByname(req.getParameter("username"));
-            userImfCache.put(user.getUsername(), user);
-        }
-
+        String username = req.getParameter("username");
+        user=userService.ShowImformation(username);
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> response = new HashMap<>();
-
         if (user != null) {
             response.put("group", user.getGroupid());
             response.put("password", user.getPassword());
@@ -289,165 +218,133 @@ public class UserServlet  extends BaseServlet {
             resp.getWriter().write(json);
 
         }
-
-
     }
-
+    //发送加入企业的请求
     public void Sendapplication(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String senter = req.getParameter("senter");
         String groupid = req.getParameter("groupid");
         String message1 = req.getParameter("sendmessage");
-        User user = userDao.selectByname(senter);
-        String groupname = user.getGroupid();
-        if (groupname != null) {
-            String jsonString = JSON.toJSONString("已处于一个群组，请先退出");
-            resp.setContentType("text/json;charset=utf-8");
-            resp.getWriter().write(jsonString);
-            return;
-        }
-        List<Group> groups = groupDAO.selectAllForAdmin();
-        for (Group group : groups) {
-            if (Objects.equals(group.getGroupname(), groupid)) {
-                Message message = new Message(senter, message1, groupid, "application");
-                int i = userDao.sendapplication(message);
-                String jsonString = JSON.toJSONString("发送申请完毕");
-                resp.setContentType("text/json;charset=utf-8");
-                resp.getWriter().write(jsonString);
-                return;
-            }
-        }
-        String jsonString = JSON.toJSONString("该群组不存在");
         resp.setContentType("text/json;charset=utf-8");
+        String result=userService.SendApplication(senter,groupid,message1);  //获取发送请求的情况以及结果
+        String jsonString = JSON.toJSONString(result);
         resp.getWriter().write(jsonString);
 
 
     }
-
+    //用户退出群组
     public void ExitfromGroup(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
         String username = req.getParameter("username");
-        User user = userDao.selectByname(username);
-        String groupname = user.getGroupid();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();      //用以设置相应内容
         Map<String, Object> response = new HashMap<>();
-        if (groupname == null) {
-            response.put("success", false);
-            String json = mapper.writeValueAsString(response);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.getWriter().write(json);
-            return;
-        }
-        int i = userDao.ExitGroup(username);
-        Message message = new Message(username, "退出群组", groupname, "Exit");
-        int b = userDao.sendapplication(message);
-
-        if (i == 1) {
+        String result=userService.ExitGroup(username);
+        if(result.equals("true")){
             response.put("success", true);
             String json = mapper.writeValueAsString(response);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write(json);
+        }else{
+            response.put("success", false);
+            String json = mapper.writeValueAsString(response);
             resp.getWriter().write(json);
         }
-    }
 
+
+
+    }
+    //用户接受企业管理员邀请加入群组
     public void UserAcceptInvitation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String username = req.getParameter("username");
         String groupname = req.getParameter("Thegroupname");
         String TheSenter = req.getParameter("TheSenter");
-        int i = userDao.ForAgreement(username, groupname);
-        messageDAO.DeleteInvitationMessage(TheSenter, username, "invitation");
+        userService.UserHandleInvitation("yes",username,groupname,TheSenter);
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已加入");
 
     }
-
-    public void selectAllUserForAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        List<User> users = userDao.selectAllUser();
-        String jsonString = JSON.toJSONString(users);
-        resp.setContentType("text/json;charset=utf-8");
-        resp.getWriter().write(jsonString);
-    }
-
-    public void ForAdminBanUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String id = req.getParameter("id");
-        int i = userDao.OperateBanUser(id, "true");
-        resp.setCharacterEncoding("UTF-8");
-        resp.getWriter().write("已封禁");
-
-    }
-
-    public void ForAdminUnBanUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setCharacterEncoding("UTF-8");
-        String id = req.getParameter("id");
-        User user=userDao.selectByname(id);
-        String locked=user.getLocked();
-        if(locked.equals("false")){
-            resp.getWriter().write("用户未被封禁");
-            return;
-        }
-
-        int i = userDao.OperateBanUser(id, "false");
-
-        resp.getWriter().write("已解禁");
-
-    }
-
+    //用户拒绝企业管理员邀请加入群组
     public void UserDenyInvitation(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String id = req.getParameter("username");
         String thesenter = req.getParameter("TheSenter");
         String groupid = req.getParameter("groupid");
-        messageDAO.DeleteInvitationMessage(thesenter, id, "invitation");
-        messageDAO.SendUserDenyMessage(thesenter, id, groupid);
+        userService.UserHandleInvitation("yes",id,groupid,thesenter);
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已拒绝");
+    }
+    //为企业管理员获得所有用户
+    public void selectAllUserForAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        List<User> users = userService.getAllUsers();
+        String jsonString = JSON.toJSONString(users);
+        resp.setContentType("text/json;charset=utf-8");
+        resp.getWriter().write(jsonString);
+    }
+    //企业管理员封禁或解禁用户
+    public void ForAdminBanUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setCharacterEncoding("UTF-8");
+        String id = req.getParameter("id");
+        String result=userService.AdminHandleUser(id,"ban");
+        resp.getWriter().write("已封禁");
+
+    }
+    public void ForAdminUnBanUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setCharacterEncoding("UTF-8");
+        String id = req.getParameter("id");
+        String result=userService.AdminHandleUser(id,"unban");
+        if(result.equals("done")){
+            resp.getWriter().write("已解禁");
+        }else{
+            resp.getWriter().write(result);
+        }
     }
 
     //确认重置账号存在
     public void ResetPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
         String username = req.getParameter("username");
         String location = req.getParameter("location");
         String phoneNumber = req.getParameter("PhoneNumber");
-        User user = userDao.CheckResetPasswordAccount(username, phoneNumber, location);
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> response = new HashMap<>();
-
-        if (user != null) {
+        String result=userService.ConfirmResetAccount(username,location,phoneNumber,"confirm");  //获取是否存在此账号的结果
+        if (result.equals("true")) {
             response.put("success", true);
             String json = mapper.writeValueAsString(response);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write(json);
         } else {
             response.put("success", false);
             String json = mapper.writeValueAsString(response);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write(json);
         }
-
     }
 
     public void ForResetPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String username = req.getParameter("object");
         String password = req.getParameter("password");
-        userDao.ResetPassword(username, password);
+        String result=userService.ConfirmResetAccount(username,password," ","set");
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已修改");
     }
-
+    //获得个人资金数额
     public void GetuserFund(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String username = req.getParameter("username");
-        User user = userDao.selectByname(username);
+        User user = userDAO.selectByname(username);
         String jsonString = JSON.toJSONString(user);
         resp.setContentType("text/json;charset=utf-8");
         resp.getWriter().write(jsonString);
 
     }
+    //获取验证码
     public void  CheckCode(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         //生成验证码
+        HttpSession session = req.getSession(false); // 使用false避免在没有会话时创建新会话
+        if (session == null) {
+            // 如果确实需要在此处创建会话，确保之前没有进行过响应提交的操作
+            session = req.getSession(true);
+        }
         ServletOutputStream os = resp.getOutputStream();
         String string = CheckCodeUtil.outputVerifyImage(100, 50, os, 4);
-        HttpSession session = req.getSession();
+         session = req.getSession();
         session.setAttribute("checkCode",string);
         resp.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         resp.setHeader("Pragma", "no-cache");

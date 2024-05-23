@@ -30,14 +30,19 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
         String SQL_SELECT_GROUP = "SELECT groupname,number,direction,scale FROM tb_group WHERE 1=1 %s";
         List<String> conditions = new ArrayList<>();
 
-        // 根据groupName添加条件
+        // 根据groupName添加模糊查询条件
         if (!StringUtils.isEmpty(groupName)) {
-            conditions.add("AND groupname = ?");
+            conditions.add("AND groupname LIKE ?");
+        } else {
+            // 如果groupName为空，添加一个始终为真的条件以保持WHERE子句的完整性
+            conditions.add("AND 1=1");
         }
 
-        // 根据direction添加条件
+        // 根据direction添加条件，这里也假设可能需要模糊查询，所以使用LIKE
         if (!StringUtils.isEmpty(direction)) {
-            conditions.add("AND direction = ?");
+            conditions.add("AND direction LIKE ?");
+        } else {
+            conditions.add("AND 1=1");
         }
 
         // 拼接查询条件
@@ -50,33 +55,26 @@ public class GroupDAOimpl extends BaseDAO implements GroupDAO {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 int paramIndex = 1;
                 for (String condition : conditions) {
-                    if (condition.startsWith("AND groupname")) {
-                        ps.setString(paramIndex++, groupName);
-                    } else if (condition.startsWith("AND direction")) {
-                        ps.setString(paramIndex++, direction);
+                    if (condition.startsWith("AND groupname LIKE")) {
+                        // 在参数值前后添加通配符以支持模糊查询
+                        ps.setString(paramIndex++, "%" + groupName + "%");
+                    } else if (condition.startsWith("AND direction LIKE")) {
+                        // 同样对direction进行模糊处理
+                        ps.setString(paramIndex++, "%" + direction + "%");
                     }
                 }
                 try (ResultSet rs = ps.executeQuery()) {
                     // 处理结果集，将数据转化为Group对象并返回
                     List<Group> groups = new ArrayList<>();
                     while (rs.next()) {
-                        // 将结果集数据映射到Group对象，此处省略具体映射逻辑
                         Group group = new Group();
-
-                        // 假设Group类有以下属性，且对应的列名分别是"group_id"、"group_name"、"description"
                         group.setDirection(rs.getString("direction"));
                         group.setGroupname(rs.getString("groupname"));
                         group.setScale(rs.getString("scale"));
                         group.setNumber(rs.getInt("number"));
                         groups.add(group);
                     }
-                    rs.close();
-                    ps.close();
-                    if (connection.getAutoCommit()) {
-                        JDBCUtilV2.release();
-                    }
                     return groups;
-
                 }
             }
         }

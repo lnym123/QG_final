@@ -615,7 +615,7 @@
                             width="30%"
                             :before-close="handleClose6">
                         <el-form :model="AllocatefundsNumber" label-width="80px">
-                            <el-form-item label="分配金额" prop="number" :rules="allocateFundsRules">
+                            <el-form-item label="分配金额（整数）" prop="number" :rules="allocateFundsRules">
                                 <el-input v-model="AllocatefundsNumber.number" placeholder="请输入分配的金额"></el-input>
                             </el-form-item>
                         </el-form>
@@ -1527,11 +1527,9 @@
                     method: 'POST',
                     data:{
                         Theuser:username,
-                        Useramount:Number(_this.AllocatefundsNumber.number),
-                        pubilicAmount:_this.GroupPublicFunds+Number(_this.AllocatefundsNumber.number),
-                        // Useramount:Number(amount) - Number(_this.AllocatefundsNumber.number),
-                        // pubilicAmount:_this.GroupPublicFunds+Number(_this.AllocatefundsNumber.number),
-                        Theamount:amount
+                        Useramount:amount,
+                        pubilicAmount:_this.GroupPublicFunds,
+                        Theamount:Number(_this.AllocatefundsNumber.number)
                     },
                     dataType:'text',
                     success: (response) => {

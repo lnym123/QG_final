@@ -56,11 +56,11 @@
                 </el-form-item>
 
                 <!-- 确认密码 -->
-                <el-form-item label="确认密码" prop="confirmPassword" :rules="confirmPasswordRules">
+                <el-form-item label="确认密码" prop="confirmPassword" :rules="confirmPfasswordRules">
                     <el-input style="width: 200px;" type="password" v-model="registerForm.confirmPassword" placeholder="请再次输入密码"></el-input>
                 </el-form-item>
                 <el-form-item label="验证码">
-                    <el-input style="width: 200px;" v-model="loginForm.checkCode" placeholder="请输入验证码"></el-input>
+                    <el-input style="width: 200px;" v-model="registerForm.checkCode" placeholder="请输入验证码"></el-input>
                     <el-image style="margin-left: 10px;" :src="checkCodeUrl" fit="cover" @click="changeImg"></el-image>
                     <el-button type="text" @click="changeImg">看不清？</el-button>
                 </el-form-item>
@@ -167,7 +167,8 @@
                     nickname: "",
                     location: "",
                     PhoneNumber: "",
-                    confirmPassword: ""
+                    confirmPassword: "",
+                    checkCode:""
                 },
                 phoneNumberRules: [
                     {required: true, message: '手机号码不能为空'},
@@ -317,7 +318,7 @@
                     data: {
                         username: _this.User.username,
                         location: _this.User.location,
-                        PhoneNumber: _this.User.PhoneNumber // 确保属性名与后端预期一致
+                        PhoneNumber: _this.User.PhoneNumber
                     },
                     dataType: 'json', // 修正为正确的dataType
                     success: function (response) {
