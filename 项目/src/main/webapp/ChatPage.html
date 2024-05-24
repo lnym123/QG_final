@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat with Custom ID</title>
+
+        <meta charset="UTF-8">
+        <title>聊天室页面</title>
+        <script src="lib/jquery-3.7.1.min.js"></script>
+        <script src="lib/vue.js"></script>
+        <script src="element-ui/lib/index.js"></script>
+        <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+
+</head>
+<style>
+    .el-header, .el-footer {
+        background-color: #B3C0D1;
+        color: #333;
+        text-align: left;
+        line-height: 60px;
+
+    }
+    .el-header {
+        display: flex;
+        align-items: center; /* 如果需要垂直居中 */
+    }
+
+    .el-header > div {
+        margin-left: 10px; /* 根据需要调整间距 */
+    }
+    .el-main {
+        background-color: #E9EEF3;
+        color: #333;
+        text-align: left;
+        line-height: 10px;
+    }
+
+    body > .el-container {
+        margin-bottom: 40px;
+    }
+
+    .el-container:nth-child(5) .el-aside,
+    .el-container:nth-child(6) .el-aside {
+        line-height: 260px;
+    }
+
+    .el-container:nth-child(7) .el-aside {
+        line-height: 320px;
+    }
+    .message-button-container {
+        display: flex;
+        justify-content: flex-end; /* 右对齐 */
+        align-items: center; /* 与头部其他元素垂直居中 */
+        margin-right: 10px; /* 添加一点右侧间距 */
+    }
+</style>
+<body>
+
+
+<div id="app">
+    <el-container>
+        <el-header>
+
+            <div>  聊天室  当前企业：{{ groupId }}</div>
+            <div style="margin-left: 100px">用户名：{{userId}}</div>
+            <el-button style="margin-left: 100px"   type="primary" @click="goBack">返回</el-button>
+        </el-header>
+
+        <el-main>
+            <div id="chat-messages">
+                <p v-for="(msg, index) in messages" :key="index">{{ msg }}</p>
+            </div>
+            <el-input v-model="message" style="width: 200px;"  placeholder="请输入内容"></el-input>
+
+            <button @click="sendMessage">发送消息</button>
+        </el-main>
+    </el-container>
+
+</div>
+
+
+</body>
+
+<script>
+    new Vue({
+        el: '#app',
+        mounted() {
+            this.checkToken();
+            this.initWebSocket();
+        },
+        data(){
+            return{
+                groupId:'',
+                userId:'',
+                message:'',
+                messages:[]
+            }
+        },
+        methods:{
+            goBack() {
+                window.location.href ="MainPage.html";
+            },
+            checkToken() {
+                // 当页面加载完成后
+                // 在Vue实例创建时尝试从localStorage获取token
+                this.token = localStorage.getItem('jwtToken');
+                if (this.token) {
+                    try {
+                        // 分割JWT字符串为三部分: header.payload.signature
+                        const [header, payload, signature] = this.token.split('.');
+                        // 将Base64Url编码转换为Base64编码
+                        const base64Payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+                        // Base64解码负载部分为Uint8Array
+                        const decodedBytes = Uint8Array.from(atob(base64Payload), c => c.charCodeAt(0));
+                        // 使用TextDecoder解码为UTF-8字符串
+                        const decodedPayload = new TextDecoder("utf-8").decode(decodedBytes);
+                        // 解析负载部分的JSON字符串
+                        const tokenData = JSON.parse(decodedPayload);
+                        // 从token数据中提取信息
+                        if (tokenData && tokenData.username) {
+                            console.log("用户名：", tokenData.username);
+                            this.userId = tokenData.username;
+                        }
+                        if (tokenData && tokenData.groupname) {
+                            console.log("企业名：", tokenData.groupname);
+                            this.groupId = tokenData.groupname;
+                        }
+                    } catch (error) {
+                        console.error('解析token时出错:', error);
+                    }
+                } else {
+                    console.log('localStorage中没有找到token');
+                }
+            },
+            sendCustomId() {
+                // 发送Vue实例中的userId作为自定义ID
+                if(this.userId) {
+                    socket.send(JSON.stringify({action: 'newUser',theId:this.userId,theGroup:this.groupId}));
+                } else {
+                    console.warn('userId not available yet.');
+                }
+            },
+            initWebSocket() {
+                socket = new WebSocket("ws://localhost:8080/jwt_test/chat");
+                socket.onopen = this.sendCustomId; // 当WebSocket连接打开时调用sendCustomId方法
+                socket.onmessage = this.handleWebSocketMessage.bind(this);
+            },
+            // 新增一个方法用于处理WebSocket消息
+            handleWebSocketMessage(event) {
+                const messageData = event.data;
+                // 根据需要处理消息数据，这里直接添加到messages数组
+                this.messages.push(messageData);
+            },
+            sendMessage() {
+                var messageInput = this.message
+                var customId = this.userId // 用户id
+                var groupname= this.groupId//用户所在企业群组
+
+                // 构建JSON对象，包含自定义ID和消息内容
+                var messageJson = {
+                    action: 'chat', // 使用自定义ID
+                    content: messageInput,// 消息内容
+                    theId:customId,
+                    theGroup:groupname
+                };
+                // 将JSON对象转换为字符串
+                var message = JSON.stringify(messageJson);
+                // 发送JSON格式的消息到服务器
+                socket.send(message);
+                // 清空输入框
+                messageInput.value = "";
+            }
+        }
+    })
+</script>
+
+</html>

@@ -31,11 +31,11 @@ public class TransactionServiceImpl implements TransactionService {
     GroupDAO groupDAO = new GroupDAOimpl();
     private static final Cache<String, User> userCache = Caffeine.newBuilder()
             .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES) //
+            .expireAfterWrite(100, TimeUnit.MINUTES) //
             .build();
     private static final Cache<String, Group> GroupCache = Caffeine.newBuilder()
             .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .expireAfterWrite(100, TimeUnit.MINUTES)
             .build();
     Connection connection = null;
     private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
@@ -78,6 +78,9 @@ public class TransactionServiceImpl implements TransactionService {
                 }
 
                 if (inTheNameOf.equals("个人")) {//事务保证发送和冻结资金同时发生
+                    if(number>user.getPersonalfunds()){
+                        return "个人余额不足";
+                    }
                     Transaction transaction = new Transaction(username, object, formattedTime, number, "已结算", null, "个人");
                     try {
                         connection = JDBCUtilV2.getConnection();

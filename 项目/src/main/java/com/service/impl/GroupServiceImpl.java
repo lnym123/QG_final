@@ -21,7 +21,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserDAO userDao = new UserDAOImpl();
     private static final Cache<String, Group> GroupCache = Caffeine.newBuilder()
             .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .expireAfterWrite(100, TimeUnit.MINUTES)
             .build();
 
     @Override

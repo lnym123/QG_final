@@ -149,6 +149,7 @@ public class UserServlet  extends BaseServlet {
                         .claim("authority", matchedUser.getAuthority())
                         .claim("PersonalFunds", matchedUser.getPersonalfunds())
                         .claim("username", username)
+                        .claim("groupname",matchedUser.getGroupid())
                         .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 设置过期时间
                         .compact();
                 out.println("{\"token\":\"" + token + "\"}");

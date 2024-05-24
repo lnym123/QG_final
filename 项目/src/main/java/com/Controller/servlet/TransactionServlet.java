@@ -55,6 +55,7 @@ public class TransactionServlet extends BaseServlet {
             resp.getWriter().write("密码错误");
             return;
         }
+
         //处理发送请求，得到结果
         String result=transactionService.SendTransaction(formattedTime,username,object,password,hashedPassword,inTheNameOf,number,user);
         resp.getWriter().write(result);

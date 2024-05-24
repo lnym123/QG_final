@@ -113,9 +113,15 @@
             <artifactId>aopalliance</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version> <!-- 或者其他适用版本 -->
+        </dependency>
 
 
-    <dependency>
+
+        <dependency>
 
         <groupId>com.alibaba</groupId>
         <artifactId>fastjson</artifactId>
