@@ -61,19 +61,36 @@
     <el-container>
         <el-header>
 
-            <div>  聊天室  当前企业：{{ groupId }}</div>
-            <div style="margin-left: 100px">用户名：{{userId}}</div>
-            <el-button style="margin-left: 100px"   type="primary" @click="goBack">返回</el-button>
+            <div v-if="mode === 'public'">  聊天室  当前企业：{{ groupId }}</div>
+            <div v-if="mode === 'private'"> 当前聊天对象:{{ object }}</div>
+            <div  style="margin-left: 100px">用户名：{{userId}}</div>
+            <el-button style="margin-left: 100px"   type="primary" @click="goBack1">返回</el-button>
+            <el-button style="margin-left: 100px" v-if="mode==='private'"  type="primary" @click="goBack2">返回到企业聊天室</el-button>
         </el-header>
-
+        <el-container>
+            <el-aside v-if="mode === 'public'" width="200px">当前企业聊天室内在线用户
+                <div id="chat-1messages">
+                    <div v-for="(user, index) in onlineUsers" :key="index" class="user-item">
+                        <p>{{ user }}</p>
+                        <el-button size="small" @click="handlePrivateChat(user)">私聊</el-button>
+                    </div>
+                </div>
+            </el-aside>
         <el-main>
-            <div id="chat-messages">
+            <div v-if="mode === 'public'" id="chat-messages">
                 <p v-for="(msg, index) in messages" :key="index">{{ msg }}</p>
             </div>
-            <el-input v-model="message" style="width: 200px;"  placeholder="请输入内容"></el-input>
 
-            <button @click="sendMessage">发送消息</button>
+            <div v-if="mode === 'private'" id="PrivateChat-messages">
+                <p v-for="(msg, index) in PrivateMessages" :key="index">{{ msg }}</p>
+            </div>
+
+            <el-input v-if="mode === 'public'" v-model="message" style="width: 200px;"  placeholder="请输入内容"></el-input>
+            <button  v-if="mode === 'public'" @click="sendMessage">发送消息</button>
+            <el-input v-if="mode === 'private'" v-model="PrivateMessage" style="width: 200px;"  placeholder="请输入内容"></el-input>
+            <button v-if="mode === 'private'" @click="sendPrivateMessage">发送消息</button>
         </el-main>
+        </el-container>
     </el-container>
 
 </div>
@@ -93,12 +110,26 @@
                 groupId:'',
                 userId:'',
                 message:'',
-                messages:[]
+                PrivateMessage:'',
+                messages:[],
+                PrivateMessages:[],
+                onlineUsers:[],
+                mode:"public",
+                object:""   //私聊对象
             }
         },
         methods:{
-            goBack() {
+            goBack1() {
+                if(this.mode==="private"){
+                    this.HandleLeavePrivate();
+                }
                 window.location.href ="MainPage.html";
+            },
+            goBack2(){
+                if(this.mode==="private"){
+                    this.HandleLeavePrivate();
+                }
+                this.mode="public"
             },
             checkToken() {
                 // 当页面加载完成后
@@ -147,9 +178,57 @@
             },
             // 新增一个方法用于处理WebSocket消息
             handleWebSocketMessage(event) {
-                const messageData = event.data;
-                // 根据需要处理消息数据，这里直接添加到messages数组
-                this.messages.push(messageData);
+                const messageString = event.data; // 接收的JSON字符串
+                    // 将JSON字符串解析为JavaScript对象
+                    const messageObj = JSON.parse(messageString);
+                    // 提取content字段的内容
+                    const TheEvent=messageObj.event;
+                    const content = messageObj.content;
+                    const userId=messageObj.userId
+                    const TestObject=messageObj.object
+
+
+                    if(TheEvent==="onlineUsersList"){
+                        this.onlineUsers.length = 0;
+                        let usernames = content.replace(/{|}/g, '').split(',');
+                        // 清空onlineUsers数组，准备添加新的数据
+                        this.onlineUsers = [];
+                        // 遍历用户名列表，去除等号并添加到onlineUsers数组
+                        usernames.forEach(username => {
+                            let cleanedUsername = username.replace(/=/g, ''); // 去除等号
+                            if (cleanedUsername) { // 确保用户名非空后才添加
+                                this.onlineUsers.push(cleanedUsername);
+                            }
+                        });
+                        return;
+
+                    }
+                    if(TheEvent==="OpenPrivateChat"){
+                        this.mode="private";
+                        this.object=TestObject;
+                        return;
+                    }
+                    if(TheEvent==="PrivateChat"){
+                        this.PrivateMessages.push(TestObject+":"+content);
+                        return;
+                    }
+                if(TheEvent==="LEAVEChat"){
+                    this.mode="public";
+                    this.object="";
+                    return;
+                }
+
+                if(TheEvent==="LogOut"){
+                    //得到要删除用户的索引，通过匹配userId找到
+                    const indexToRemove = this.onlineUsers.findIndex(user => user === userId);
+                    if (indexToRemove !== -1) {
+                        // 删除找到的索引处的元素
+                        this.onlineUsers.splice(indexToRemove, 1);
+                    }
+                }
+                // 根据需要处理content内容，这里直接添加到messages数组
+                    this.messages.push(userId+content);
+
             },
             sendMessage() {
                 var messageInput = this.message
@@ -169,6 +248,65 @@
                 socket.send(message);
                 // 清空输入框
                 messageInput.value = "";
+            },
+            handlePrivateChat(user){
+                if(user===this.userId){
+                    alert("无法与自己私聊");
+                    return;
+                }
+               this.mode="private";
+               this.object=user;
+               this.OpenPrivateChat();
+
+            },
+            OpenPrivateChat(){
+                var customId =this.userId // 用户id
+                var object=this.object  //私聊对象id
+
+                // 构建JSON对象，包含自定义ID和消息内容
+                var messageJson = {
+                    action: 'OpenPrivate', // 使用自定义ID
+                    theId:customId,
+                    TheObject:object
+                };
+                // 将JSON对象转换为字符串
+                var message = JSON.stringify(messageJson);
+                // 发送JSON格式的消息到服务器
+                socket.send(message);
+                // 清空输入框
+                messageInput.value = "";
+            },
+            sendPrivateMessage(){
+                this.PrivateMessages.push(this.userId+":"+this.PrivateMessage);
+                var messageInput = this.PrivateMessage
+                var customId = this.userId // 用户id
+                var object= this.object  //私聊对象id
+
+                // 构建JSON对象，包含自定义ID和消息内容
+                var messageJson = {
+                    action: 'private', // 使用自定义ID
+                    content: messageInput,// 消息内容
+                    theId:customId,
+                    TheObject:object
+                };
+                // 将JSON对象转换为字符串
+                var message = JSON.stringify(messageJson);
+                // 发送JSON格式的消息到服务器
+                socket.send(message);
+                // 清空输入框
+                messageInput.value = "";
+            },
+            //用户离开私聊，另对方退出私聊界面
+            HandleLeavePrivate(){
+                var messageJson = {
+                    action: 'LeavePrivate', // 使用自定义ID
+                    TheObject:this.object
+                };
+                // 将JSON对象转换为字符串
+                var message = JSON.stringify(messageJson);
+                // 发送JSON格式的消息到服务器
+                socket.send(message);
+                // 清空输入框
             }
         }
     })

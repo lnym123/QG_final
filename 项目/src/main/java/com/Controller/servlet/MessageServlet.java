@@ -1,12 +1,17 @@
 package com.controller.servlet;
+import com.AutoValidateFrame.Validator.ValidationException;
+import com.AutoValidateFrame.ValidatorFactory;
 import com.controller.BaseServlet;
+import com.controller.DItest.SimpleDIContainer;
 import com.dao.MessageDAO;
 import com.dao.impl.MessageDAOimpl;
 import com.alibaba.fastjson.JSON;
+import com.pojo.Group;
 import com.pojo.Message;
 import com.service.MessageService;
 import com.service.impl.MessageServiceImpl;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -15,7 +20,12 @@ import java.util.List;
 
 @WebServlet("/message/*")
 public class MessageServlet extends BaseServlet {
-    MessageService messageService = new MessageServiceImpl();
+    MessageService messageService;
+    public void init() throws ServletException {
+        super.init();
+        SimpleDIContainer container = (SimpleDIContainer) getServletContext().getAttribute("diContainer");
+        messageService = container.getBean(MessageServiceImpl.class);
+    }
     MessageDAO messageDAO=new MessageDAOimpl();
 
     //获取管理员用户的消息
@@ -67,7 +77,10 @@ public void ForUserMessage(HttpServletRequest req, HttpServletResponse resp) thr
         resp.setCharacterEncoding("UTF-8");
         String theSenter = req.getParameter("TheSenter");
         String theGroupId = req.getParameter("TheGroupId");
-        if (!ValidationHelper.isValidLocation(theGroupId)) {
+        Group group=new Group(theGroupId,"测试","测试");
+        try {
+            ValidatorFactory.Validator(group);
+        } catch (ValidationException e) {
             resp.getWriter().write("群组名称格式错误,应为汉字");
             return;
         }

@@ -23,6 +23,8 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TransactionServiceImpl implements TransactionService {
     TransactionDAO transactionDAO = new TransactionDAOimpl();
@@ -39,6 +41,8 @@ public class TransactionServiceImpl implements TransactionService {
             .build();
     Connection connection = null;
     private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
+    Lock lock=new ReentrantLock();
+     static Object object=new Object();
     //发送付款请求
     @Override
     public String SendTransaction(String formattedTime, String username, String object, String password,
@@ -81,27 +85,28 @@ public class TransactionServiceImpl implements TransactionService {
                     if(number>user.getPersonalfunds()){
                         return "个人余额不足";
                     }
-                    Transaction transaction = new Transaction(username, object, formattedTime, number, "已结算", null, "个人");
-                    try {
-                        connection = JDBCUtilV2.getConnection();
-                        connection.setAutoCommit(false);
-                        //操作
-                        userDAO.FreezePersonalFund(username, number);
-                        transactionDAO.SendTransaction(transaction);
-                        //提交
-                        connection.commit();
-                    } catch (Exception e) {
+                    synchronized(this) {
+                        Transaction transaction = new Transaction(username, object, formattedTime, number, "已结算", null, "个人");
                         try {
-                            connection.rollback();
-                            logger.error(e.getMessage());
-                            return "发生错误，请重新发送";
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
+                            connection = JDBCUtilV2.getConnection();
+                            connection.setAutoCommit(false);
+                            //操作
+                            userDAO.FreezePersonalFund(username, number);
+                            transactionDAO.SendTransaction(transaction);
+                            //提交
+                            connection.commit();
+                        } catch (Exception e) {
+                            try {
+                                connection.rollback();
+                                logger.error(e.getMessage());
+                                return "发生错误，请重新发送";
+                            } catch (Exception ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        } finally {
+                            JDBCUtilV2.release();
                         }
-                    } finally {
-                        JDBCUtilV2.release();
                     }
-
 
                 } else {  //以群组名义
                     String groupname = user.getGroupid();//得到群组
@@ -112,25 +117,27 @@ public class TransactionServiceImpl implements TransactionService {
                     if (GroupFunds < number) {
                         return "用户在群组内资金不足";
                     }
-                    Transaction transaction = new Transaction(username, object, formattedTime, number, "已结算", groupname, "群组");
-                    try {
-                        connection = JDBCUtilV2.getConnection();
-                        connection.setAutoCommit(false);
-                        //操作
-                        userDAO.FreezeGroupFund(username, number);
-                        transactionDAO.SendTransaction(transaction);
-                        //提交
-                        connection.commit();
-                    } catch (Exception e) {
+                    synchronized(this) {
+                        Transaction transaction = new Transaction(username, object, formattedTime, number, "已结算", groupname, "群组");
                         try {
-                            connection.rollback();
-                            logger.error(e.getMessage());
-                            return "发生错误，请重新发送";
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
+                            connection = JDBCUtilV2.getConnection();
+                            connection.setAutoCommit(false);
+                            //操作
+                            userDAO.FreezeGroupFund(username, number);
+                            transactionDAO.SendTransaction(transaction);
+                            //提交
+                            connection.commit();
+                        } catch (Exception e) {
+                            try {
+                                connection.rollback();
+                                logger.error(e.getMessage());
+                                return "发生错误，请重新发送";
+                            } catch (Exception ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        } finally {
+                            JDBCUtilV2.release();
                         }
-                    } finally {
-                        JDBCUtilV2.release();
                     }
 
                 }
@@ -159,45 +166,48 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public String UserAcceptShouKuan(String thePayer, String theAmount, int TheAmount, String theTime, String therecipient, String TheNominal) {
         List<Transaction> transactions=transactionDAO.GetShouKuanTransactionS(therecipient);//未转换前的收款单子。
-        try {
-            connection = JDBCUtilV2.getConnection();
-            connection.setAutoCommit(false);
-            //操作
-
-            if(TheNominal.equals("个人")) {
-                transactionDAO.GetShouKuanRecord(thePayer,theAmount,theTime,therecipient);
-                //写入收款方流水
-                Funds funds1 = new Funds(therecipient, thePayer, theTime, "收入", theAmount, "已收款", "个人", null);
-                //付款方的流水
-                Funds funds2 = new Funds(thePayer, therecipient, theTime, "支出", theAmount, "已收款", "个人", null);
-                fundDAO.ShouKuanFund(funds1);
-                fundDAO.ShouKuanFund(funds2);
-            }else{
-                //名义是群组，付款人则是群组
-                //修改的订单
-                for (Transaction transaction : transactions) {//获得已群组名义支付的正在的payer
-                    if(transaction.getAmount()==TheAmount&&transaction.getTransaction_time().equals(theTime)){
-                        transactionDAO.GetShouKuanRecord(transaction.getPayer(), theAmount,theTime,therecipient);
-                        //写入流水
-                        Funds funds1=new Funds(therecipient,thePayer,theTime,"收入",theAmount,"已收款","个人",null);
-                        //付款方的流水
-                        Funds funds2=new Funds(transaction.getPayer(),therecipient,theTime,"支出",theAmount,"已收款","群组",transaction.getGroupname());
-                        fundDAO.ShouKuanFund(funds1);
-                        fundDAO.ShouKuanFund(funds2);
-                    }}
-            }
-            //提交
-            connection.commit();
-        } catch (Exception e) {
+        synchronized(this) {
             try {
-                connection.rollback();
-                logger.error(e.getMessage());
-                return "发生错误，请重新操作";
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
+                connection = JDBCUtilV2.getConnection();
+                connection.setAutoCommit(false);
+                //操作
+
+                if (TheNominal.equals("个人")) {
+                    transactionDAO.GetShouKuanRecord(thePayer, theAmount, theTime, therecipient);
+                    //写入收款方流水
+                    Funds funds1 = new Funds(therecipient, thePayer, theTime, "收入", theAmount, "已收款", "个人", null);
+                    //付款方的流水
+                    Funds funds2 = new Funds(thePayer, therecipient, theTime, "支出", theAmount, "已收款", "个人", null);
+                    fundDAO.ShouKuanFund(funds1);
+                    fundDAO.ShouKuanFund(funds2);
+                } else {
+                    //名义是群组，付款人则是群组
+                    //修改的订单
+                    for (Transaction transaction : transactions) {//获得已群组名义支付的正在的payer
+                        if (transaction.getAmount() == TheAmount && transaction.getTransaction_time().equals(theTime)) {
+                            transactionDAO.GetShouKuanRecord(transaction.getPayer(), theAmount, theTime, therecipient);
+                            //写入流水
+                            Funds funds1 = new Funds(therecipient, thePayer, theTime, "收入", theAmount, "已收款", "个人", null);
+                            //付款方的流水
+                            Funds funds2 = new Funds(transaction.getPayer(), therecipient, theTime, "支出", theAmount, "已收款", "群组", transaction.getGroupname());
+                            fundDAO.ShouKuanFund(funds1);
+                            fundDAO.ShouKuanFund(funds2);
+                        }
+                    }
+                }
+                //提交
+                connection.commit();
+            } catch (Exception e) {
+                try {
+                    connection.rollback();
+                    logger.error(e.getMessage());
+                    return "发生错误，请重新操作";
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            } finally {
+                JDBCUtilV2.release();
             }
-        }finally {
-            JDBCUtilV2.release();
         }
         return "已收款";
     }
@@ -291,7 +301,6 @@ public class TransactionServiceImpl implements TransactionService {
 
         User user=userDAO.selectByname(therecipient);
         String groupname= user.getGroupid(); //真正的收款者，群名
-
         //如果以群组名义，payer是群组名，如果名义是个人，payer是人名，
         try {
             connection= JDBCUtilV2.getConnection();

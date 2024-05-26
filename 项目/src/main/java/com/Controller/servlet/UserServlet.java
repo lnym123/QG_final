@@ -1,6 +1,9 @@
 package com.controller.servlet;
+import com.AutoValidateFrame.Validator.ValidationException;
+import com.AutoValidateFrame.ValidatorFactory;
 import com.controller.BaseServlet;
 import com.alibaba.fastjson.JSON;
+import com.controller.DItest.SimpleDIContainer;
 import com.dao.UserDAO;
 import com.dao.impl.UserDAOImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +19,8 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,7 +46,13 @@ import java.util.*;
 @MultipartConfig // 启用文件上传功能
 public class UserServlet  extends BaseServlet {
     private static final Logger logger = LoggerFactory.getLogger(UserServlet.class);
-    UserService userService = new UserServiceImpl();
+    UserService userService;
+    public void init() throws ServletException {
+        super.init();
+        SimpleDIContainer container = (SimpleDIContainer) getServletContext().getAttribute("diContainer");
+        userService = container.getBean(UserServiceImpl.class);
+    }
+
     private static final String UPLOAD_DIR = "src/main/webapp/images";
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 2; // 限制文件大小为2MB
     private static final String SECRET_KEY = "MykEY";
@@ -100,21 +111,29 @@ public class UserServlet  extends BaseServlet {
 
     }
    //用户修改个人信息
-    public void ForChangeData(HttpServletRequest req, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
+    public void ForChangeData(HttpServletRequest req, HttpServletResponse resp ) throws IOException, NoSuchAlgorithmException {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
+
         String codePassword=hashPasswordSHA256(password);
         String location = req.getParameter("location");
         String PhoneNumber = req.getParameter("PhoneNumber");
         resp.setCharacterEncoding("UTF-8");
-        if (!ValidationHelper.isValidPhoneNumber(PhoneNumber)) {
-            resp.getWriter().write("手机号格式错误");
+
+        //验证数据
+        User user = new User("TEST",location,PhoneNumber);
+        try {
+
+            ValidatorFactory.Validator(user);
+
+        } catch (ValidationException e) {
+            resp.getWriter().write(e.getMessage());
             return;
         }
-        if (!ValidationHelper.isValidLocation(location)) {
-            resp.getWriter().write("地址格式错误");
-            return;
-        }
+
+
+
+
         userService.ChangePersonData(username, codePassword, location, PhoneNumber);
         resp.getWriter().write("修改完成");
 
@@ -139,7 +158,7 @@ public class UserServlet  extends BaseServlet {
                     resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
             }
-       logger.info("当前用户"+matchedUser);
+        logger.info("当前用户{}", matchedUser);
             if (matchedUser != null && matchedUser.getPassword().equals(hashedPassword)) {
                 resp.setContentType("application/json");
                 String token = Jwts.builder()
@@ -170,25 +189,21 @@ public class UserServlet  extends BaseServlet {
         String checkCode = req.getParameter("checkCode");
         HttpSession session = req.getSession();
         String checkCode1 = (String) session.getAttribute("checkCode");
-        System.out.println(checkCode);
-        System.out.println(checkCode1);
 
         if(!checkCode1.equalsIgnoreCase(checkCode)){
             resp.getWriter().write("验证码错误");
             return;
         }
-        if (!ValidationHelper.isValidPhoneNumber(PhoneNumber)) {
-            resp.getWriter().write("手机号格式错误");
+        //验证用的对象
+        User TestUser=new User(username,location,PhoneNumber);
+        //自定义注解验证格式..
+        try {
+            ValidatorFactory.Validator(TestUser);
+        } catch (ValidationException e) {
+            resp.getWriter().write(e.getMessage());
             return;
         }
-        if (!ValidationHelper.isValidLocation(location)) {
-            resp.getWriter().write("地址格式错误");
-            return;
-        }
-        if (!ValidationHelper.isValidUsername(username)) {
-            resp.getWriter().write("用户名格式错误");
-            return;
-        }
+
         if(!confirmPassword.equals(password)){
             resp.getWriter().write("请正确重复输入密码");
             return;

@@ -2,11 +2,13 @@ package com.controller.servlet;
 
 import com.controller.BaseServlet;
 import com.alibaba.fastjson.JSON;
+import com.controller.DItest.SimpleDIContainer;
 import com.pojo.Funds;
 import com.pojo.Group;
 import com.pojo.User;
 import com.service.FundService;
 import com.service.impl.FundServiceImpl;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -19,7 +21,12 @@ import java.util.Map;
 
 @WebServlet("/funds/*")
 public class FundsServlet extends BaseServlet {
-    FundService fundService=new FundServiceImpl();
+    FundService fundService;
+    public void init() throws ServletException {
+        super.init();
+        SimpleDIContainer container = (SimpleDIContainer) getServletContext().getAttribute("diContainer");
+        fundService = container.getBean(FundServiceImpl.class);
+    }
     public void ShowPersonalFlow(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
         String username =request.getParameter("username");
         List<Funds> funds=fundService.ShowPersonalFlow(username);

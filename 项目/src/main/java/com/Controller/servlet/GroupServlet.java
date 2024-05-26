@@ -1,9 +1,14 @@
 package com.controller.servlet;
+import com.AutoValidateFrame.Validator.ValidationException;
+import com.AutoValidateFrame.ValidatorFactory;
 import com.controller.BaseServlet;
 import com.alibaba.fastjson.JSON;
+import com.controller.DItest.SimpleDIContainer;
 import com.pojo.Group;
 import com.service.GroupService;
 import com.service.impl.GroupServiceImpl;
+
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,8 +17,16 @@ import java.util.List;
 
 @WebServlet("/group/*")
 public class GroupServlet extends BaseServlet {
-    GroupService groupservice=new GroupServiceImpl();
-   //进入主页面展示公开的企业群组
+    GroupService groupservice;
+    public void init() throws ServletException {
+        super.init();
+        //从ServletContext中获取DI容器
+        SimpleDIContainer container = (SimpleDIContainer) getServletContext().getAttribute("diContainer");
+        //依赖注入
+        groupservice = container.getBean(GroupServiceImpl.class);
+    }
+
+    //进入主页面展示公开的企业群组
     public void  ShowGroups(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json;charset=utf-8");
         List<Group> groups=groupservice.GetAllGroups("notAll");
@@ -46,19 +59,24 @@ public class GroupServlet extends BaseServlet {
         String id = req.getParameter("id");
         String scale = req.getParameter("scale");
         String direction = req.getParameter("direction");
-        String number = req.getParameter("number");
         String visiable=req.getParameter("visiable");
-        int TrueNum = Integer.parseInt(number);
+        String number = req.getParameter("number");
+        int TrueNum;
+        if (number != null && !number.trim().isEmpty()) {
+            TrueNum = Integer.parseInt(number);
+        } else {
+            TrueNum = 0;
+        }
         if(TrueNum<1){
             resp.getWriter().write("人数错误");
             return;
         }
-        else if (!ValidationHelper.isValidLocation(scale)) {
-                resp.getWriter().write("规模格式错误");
-                return;
-            }
-        else if (!ValidationHelper.isValidLocation(direction)) {
-            resp.getWriter().write("企业方向格式错误");
+        //验证数据
+        Group group = new Group("测试",scale,direction);
+        try {
+            ValidatorFactory.Validator(group);
+        } catch (ValidationException e) {
+            resp.getWriter().write(e.getMessage());
             return;
         }
         groupservice.ChangeGroupInfo(id,number,scale,direction,visiable);
@@ -93,4 +111,6 @@ public class GroupServlet extends BaseServlet {
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write("已注销");
     }
+
+
 }

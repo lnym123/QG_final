@@ -1,6 +1,8 @@
 package com.controller;
 
 
+import com.pojo.User;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -24,7 +26,6 @@ public class BaseServlet extends HttpServlet {
         
         //获取方法method对象
         Class<? extends BaseServlet> cls = this.getClass();
-
         //2.获取最后一段路径 （方法名）
         try {
             Method method = cls.getMethod(methodName, HttpServletRequest.class, HttpServletResponse.class);

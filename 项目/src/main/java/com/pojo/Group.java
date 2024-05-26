@@ -1,10 +1,15 @@
 package com.pojo;
 
+import com.AutoValidateFrame.Inno.ContainOnly;
+
 public class Group {
     private Integer id;
+    @ContainOnly(allowed = "^[\\u4e00-\\u9fa5]+$",message = "群组名称格式错误")
     private String groupname;
     private int number;
+    @ContainOnly(allowed = "^[\\u4e00-\\u9fa5]+$",message = "企业规模格式错误")
     private String scale;
+    @ContainOnly(allowed = "^[\\u4e00-\\u9fa5]+$",message = "企业方向格式错误")
     private String direction;
     private int publicfunds;
     private String Locked;
@@ -15,6 +20,12 @@ public class Group {
 
     public void setLocked(String locked) {
         Locked = locked;
+    }
+
+    public Group(String groupname, String scale, String direction) {
+        this.groupname = groupname;
+        this.scale = scale;
+        this.direction = direction;
     }
 
     @Override

@@ -85,7 +85,7 @@
             },
             SendPayment(){
                 if(this.PayMent.InTheNameOf==='个人'&&this.PayMent.number>this.userFund){
-                    alert("个人余额不足");
+                    alert("金额过大");
                     return;
                 }
                 var _this=this;
@@ -113,10 +113,13 @@
                 this.token = localStorage.getItem('jwtToken');
                 if (this.token) {
                     try {
-                        // 分割JWT字符串为三部分: header.payload.signature
                         const [header, payload, signature] = this.token.split('.');
-                        // Base64解码负载部分
-                        const decodedPayload = window.atob(payload);
+                        // 将Base64Url编码转换为Base64编码
+                        const base64Payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+                        // Base64解码负载部分为Uint8Array
+                        const decodedBytes = Uint8Array.from(atob(base64Payload), c => c.charCodeAt(0));
+                        // 使用TextDecoder解码为UTF-8字符串
+                        const decodedPayload = new TextDecoder("utf-8").decode(decodedBytes);
                         // 解析负载部分的JSON字符串
                         const tokenData = JSON.parse(decodedPayload);
                         // 从token数据中提取username并赋值给userId

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 public class UserServiceImpl implements UserService {
     GroupService groupService=new GroupServiceImpl();
-    private final UserDAO userDao = new UserDAOImpl();
+    private UserDAO userDao = new UserDAOImpl();
     MessageDAO messageDAO = new MessageDAOimpl();
     GroupDAO groupDAO = new GroupDAOimpl();
     private static final String UPLOAD_DIR = "src/main/webapp/images";
@@ -39,7 +39,6 @@ public class UserServiceImpl implements UserService {
             .maximumSize(1000) // 最多缓存1000个用户
             .expireAfterWrite(10, TimeUnit.MINUTES)
             .build();
-
 
     @Override
     public void ChangePersonData(String username, String codePassword, String location, String PhoneNumber) {

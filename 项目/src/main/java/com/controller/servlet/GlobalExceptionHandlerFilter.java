@@ -16,16 +16,13 @@ public class GlobalExceptionHandlerFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        // 初始化Filter，可以加载配置、初始化资源等
+        // 初始化Filter，后续可以加载配置、初始化资源等
         logger.info("Initializing GlobalExceptionHandlerFilter");
-        // 例如，从filterConfig中获取初始化参数
-        String someInitParam = filterConfig.getInitParameter("someParameter");
-        logger.info("Init parameter value: {}", someInitParam);
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+            throws IOException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
@@ -50,6 +47,5 @@ public class GlobalExceptionHandlerFilter implements Filter {
     public void destroy() {
         // 销毁Filter，释放资源
         logger.info("Destroying GlobalExceptionHandlerFilter");
-        // 例如，关闭数据库连接、停止线程等资源清理操作
     }
 }

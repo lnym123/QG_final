@@ -1,18 +1,20 @@
 package com.pojo;
 
+import com.AutoValidateFrame.Inno.ContainOnly;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class User {
 
     private Integer id;
-
+    @ContainOnly(allowed = "^[a-zA-Z]+$",message = "用户名只能英文组成")
     private String username;
     private String password;
-
+    @ContainOnly(allowed = "^[\\u4e00-\\u9fa5]+$",message = "地址格式错误")
     private String location;
 
-
+    @ContainOnly(allowed = "^1[3-9]\\d{9}$",message = "手机号格式错误")
     private String PhoneNumber;
 
     private int authority;
@@ -22,6 +24,16 @@ public class User {
 
     public int getPersonalfunds() {
         return Personalfunds;
+    }
+
+    public User(String username) {
+        this.username = username;
+    }
+
+    public User(String username, String location, String phoneNumber) {
+        this.username = username;
+        this.location = location;
+        PhoneNumber = phoneNumber;
     }
 
     public void setPersonalfunds(int personalfunds) {

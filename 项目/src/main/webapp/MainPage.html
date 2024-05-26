@@ -454,9 +454,8 @@
                     <div v-if="Authority > 1">
                         群内资金明细如下
                     </div>
-                    <a  style="margin-left: 20px" href="Payment simulation.html" target="_self">
-                        开启支付
-                    </a>
+                    <el-button style="margin-left: 30px" type="primary" @click="jumpToPaymentSimulation">开启支付
+                    </el-button>
 <!--                //展示消息记录-->
                     <el-popover
                             placement="right"
@@ -905,6 +904,11 @@
                     }
                 });
                 this.currentTable="table2";
+            },
+            jumpToPaymentSimulation() {
+                // 直接使用JavaScript进行页面跳转
+                window.location.href = 'Payment simulation.html';
+
             },showgroups() {
 
                 $.ajax({
@@ -1611,7 +1615,7 @@
             },
             //群组流水打印
             generateGroupTxtContent() {
-                const columnHeaders = ['交易用户','交易对象',  '交易时间',  '交易类型',  '交易金额', '交易状态'];
+                const columnHeaders = ['交易对象','交易用户','交易时间', '交易金额',    '交易状态', '交易类型', ];
                 const formattedText = [columnHeaders.join('\t\t')];
 
                 this.GroupFlow.forEach(row => {

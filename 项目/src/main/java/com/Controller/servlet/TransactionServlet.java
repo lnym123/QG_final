@@ -2,6 +2,7 @@ package com.controller.servlet;
 
 import com.controller.BaseServlet;
 
+import com.controller.DItest.SimpleDIContainer;
 import com.dao.TransactionDAO;
 import com.dao.UserDAO;
 
@@ -14,6 +15,7 @@ import com.pojo.User;
 import com.service.TransactionService;
 import com.service.impl.TransactionServiceImpl;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,14 +27,23 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 
+
 import static com.controller.servlet.UserServlet.hashPasswordSHA256;
 
 
 @WebServlet("/transaction/*")
 public class TransactionServlet extends BaseServlet {
-    TransactionService transactionService = new TransactionServiceImpl();
+    TransactionService transactionService ;
+    public void init() throws ServletException {
+        super.init();
+        SimpleDIContainer container = (SimpleDIContainer) getServletContext().getAttribute("diContainer");
+        transactionService = container.getBean(TransactionServiceImpl.class);
+    }
+
+
     TransactionDAO transactionDAO = new TransactionDAOimpl();
     UserDAO userDAO = new UserDAOImpl();
+
     //发送付款请求
     public void SendTransaction(HttpServletRequest request, HttpServletResponse resp) throws IOException, NoSuchAlgorithmException {
         LocalDateTime currentTime = LocalDateTime.now(); // 定义日期时间格式
